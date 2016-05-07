@@ -19,14 +19,15 @@ struct Sphere {
 
 int sphere_total = 8;
 Sphere spheres[] = {//Scene: radius, position, emission, color, material 
-	Sphere(16.5,Vec(27,16.5,47),             Vec(),           Vec(1,1,1)*.999, SPEC),//ball1
-	Sphere(16.5,Vec(47,36.5,47),             Vec(),           Vec(0.6,0.6,0.8),REFR),//ball2
-	Sphere(1e5, Vec(0, 0, -(1e5)+47-16.5),   Vec(),           Vec(.25,.25,.25),DIFF),//bottom 
-	Sphere(1e5, Vec(0, 0, (1e5)+107+16.5),   Vec(),           Vec(.25,.25,.25),DIFF),//top
-	Sphere(500, Vec(65, 26.5, (500)+106.7+16.5),Vec(12,12,12),Vec(.25,.25,.25),DIFF),//light 
-	Sphere(1e5, Vec(-(1e5)+17-16.5, 0, 0) ,  Vec(),           Vec(.75,.25,.25),DIFF),//left
-	Sphere(1e5, Vec((1e5)+117+16.5, 0, 0) ,  Vec(),           Vec(.75,.75,.25),DIFF),//right 
-	Sphere(1e5, Vec(0, -(1e5)-10-16.5, 0),   Vec(),           Vec(1,1,1)*.888, DIFF),//back
+	Sphere(16.5,Vec(27,16.5,47),             Vec(),            Vec(1,1,1)*.999, SPEC),//ball1
+	Sphere(16.5,Vec(57,46.5,47),             Vec(),            Vec(0.6,0.6,0.8),REFR),//ball2
+	Sphere(1e5, Vec(0, 0, -(1e5)+47-16.5),   Vec(),            Vec(.25,.25,.25),DIFF),//bottom 
+	Sphere(1e5, Vec(0, 0, (1e5)+107+16.5),   Vec(),            Vec(.25,.25,.25),DIFF),//top
+//	Sphere(500, Vec(65, 26.5, (500)+106.7+16.5),Vec(1,1,1)*400,Vec(.25,.25,.25),DIFF),//light 
+	Sphere(2,   Vec(65, 26.5, -4+106+16.5),Vec(1,1,1)*400,Vec(.25,.25,.25),DIFF),//light 
+	Sphere(1e5, Vec(-(1e5)+17-16.5, 0, 0) ,  Vec(),            Vec(.75,.25,.25),DIFF),//left
+	Sphere(1e5, Vec((1e5)+117+16.5, 0, 0) ,  Vec(),            Vec(.75,.75,.25),DIFF),//right 
+	Sphere(1e5, Vec(0, -(1e5)-10-16.5, 0),   Vec(),            Vec(1,1,1)*.888, DIFF),//back
 
 	Sphere(1e5, Vec( 1e5+1,40.8,81.6), Vec(),Vec(.75,.25,.25),DIFF),//Left 
 	Sphere(1e5, Vec(-1e5+99,40.8,81.6),Vec(),Vec(.25,.25,.75),DIFF),//Rght 
@@ -97,10 +98,17 @@ Vec tracing(Ray ray, int depth, int explicit_parameter = 1) {
 	if (nearest_sphere == -1) return Vec();
 	const Sphere& sphere = spheres[nearest_sphere];
 
-	if (depth > 4) return sphere.light + sphere.color;
+	Vec color = sphere.color;
+	double max_color = max(color.x,max(color.y,color.z));
+	if (depth > 4 || !max_color) {
+		if (randf(0, 1.0) < max_color) color = color * (1.0 / max_color);
+		else return sphere.light * explicit_parameter;
+	}
+
 	Vec x = ray.pos + ray.dir * min_dist;
 	Vec n = (x - sphere.pos).normal();
 	Vec nl = (n * ray.dir < 0) ? n : n * (-1);
+
 	if (sphere.material == DIFF) {
 		double r1 = randf(0, 2.0 * M_PI);
 		double r2 = randf(0, 1.0);
@@ -112,15 +120,31 @@ Vec tracing(Ray ray, int depth, int explicit_parameter = 1) {
 
 		// explicit lighting
 		Vec extra = Vec();
+		for (int i = 0; i < sphere_total; ++i)
+			if (spheres[i].light.x > 0 ||spheres[i].light.y > 0 ||spheres[i].light.z > 0) {
+				Vec sw = (spheres[i].pos - x).normal();
+				Vec su = (((abs(sw.x) > 0.1) ? Vec(0, 1, 0) : Vec(1, 0, 0)) % sw).normal();
+				Vec sv = sw % su;
+				double cos_a_max = sqrt(1 - sqr(spheres[i].radius) / ((spheres[i].pos - x) * (spheres[i].pos - x)));
+				double cos_a = randf(cos_a_max, 1.0);
+				double sin_a = sqrt(1.0 - sqr(cos_a));
+				double phi = randf(0, 2.0 * M_PI);
+				Vec l = (su * cos(phi) * sin_a + sv * sin(phi) * sin_a + sw * cos_a).normal();
+				double temp_min_dist;
+				if (intersect(Ray(x, l), temp_min_dist) == i) {
+					double omega = 2.0 * M_PI * (1.0 - cos_a_max);
+					extra = extra + color.blend(spheres[i].light * (l * nl) * omega) * M_1_PI;
+				}
+			}
 
-		return sphere.light * explicit_parameter + extra + sphere.color.blend(tracing(Ray(x, d), depth + 1, 1));
+		return sphere.light * explicit_parameter + extra + color.blend(tracing(Ray(x, d), depth + 1, 0));
 	} else
 	if (sphere.material == SPEC) {
 		Vec d = (n * (-ray.dir * n) * 2 + ray.dir).normal();
-		return sphere.light + sphere.color.blend(tracing(Ray(x, d), depth + 1));
+		return sphere.light + color.blend(tracing(Ray(x, d), depth + 1));
 	} else {
 		// material == REFR
-		Ray reflect_ray = Ray(x, (n * (-ray.dir * n) * 2 + ray.dir).normal() + ray.dir);
+		Ray reflect_ray = Ray(x, (n * (-ray.dir * n) * 2 + ray.dir).normal());
 		bool go_into = true;
 		double air_speed = 1.5;
 		double solid_speed = 1.0;
@@ -132,7 +156,7 @@ Vec tracing(Ray ray, int depth, int explicit_parameter = 1) {
 		double cos_value = -ray.dir * nl;
 		double sin_value = sqrt(1 - cos_value * cos_value);
 		if (sin_value / refract_rate > 1)
-			return sphere.light + sphere.color.blend(tracing(reflect_ray, depth + 1));
+			return sphere.light + color.blend(tracing(reflect_ray, depth + 1));
 		else {
 			sin_value /= refract_rate;
 			cos_value = sqrt(1 - sin_value * sin_value);
@@ -149,11 +173,11 @@ Vec tracing(Ray ray, int depth, int explicit_parameter = 1) {
  			double RP = Re / P;
  			double TP = Tr / (1 - P); 
  			if (depth <= 2)
- 				return sphere.light + sphere.color.blend(tracing(reflect_ray, depth + 1) * Re + tracing(refract_ray, depth + 1) * Tr);
+ 				return sphere.light + color.blend(tracing(reflect_ray, depth + 1) * Re + tracing(refract_ray, depth + 1) * Tr);
  			else if (randf(0, 1.0) < P)
- 				return sphere.light + sphere.color.blend(tracing(reflect_ray, depth + 1) * RP);
+ 				return sphere.light + color.blend(tracing(reflect_ray, depth + 1) * RP);
  			else
- 				return sphere.light + sphere.color.blend(tracing(refract_ray, depth + 1) * TP);
+ 				return sphere.light + color.blend(tracing(refract_ray, depth + 1) * TP);
 		}
 	}
 }
