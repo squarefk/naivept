@@ -1,8 +1,10 @@
 #include "constants.h"
 #include "vec.h"
 
+#include <string>
 #include <cstdio>
 #include <cmath>
+#include <ctime>
 #include <cstdlib>
 using namespace std;
 
@@ -88,8 +90,6 @@ int intersect(Ray ray, double& min_dist) {
 	return nearest_sphere;
 }
 
-int cnt;
-
 Vec tracing(Ray ray, int depth, int explicit_parameter = 1) {
 	int nearest_sphere;
 	double min_dist;
@@ -170,28 +170,41 @@ int pixel_int(double value) {
 	return int(pow(truncate(value), 1.0 / 2.2) * 255.0 + 0.5);
 }
 
-void output_picture() {
-	FILE* file = fopen("image.ppm", "w");
+void output_picture(int sample_times) {
+	string file_name = string("output/image") + to_string(sample_times) + string(".ppm");
+	FILE* file = fopen(file_name.c_str(), "w");
 	fprintf(file, "P3\n%d %d\n%d\n", WIDTH, HEIGHT, 255);
 	for (int h = 0; h < HEIGHT; ++h)
-		for (int w = 0; w < WIDTH; ++w)
-			fprintf(file, "%d %d %d ", pixel_int(pic[h][w].x), pixel_int(pic[h][w].y), pixel_int(pic[h][w].z));
+		for (int w = 0; w < WIDTH; ++w) {
+			int r = pixel_int(pic[h][w].x / sample_times);
+			int g = pixel_int(pic[h][w].y / sample_times);
+			int b = pixel_int(pic[h][w].z / sample_times);
+			fprintf(file, "%d %d %d ", r, g, b);
+		}
 }
 
 int main() {
 	Ray camera = Ray(Vec(67, 180, 77), Vec(0, -1, 0));
-	int sample_times = 10;
-	for (int h = 0; h < HEIGHT; ++h) {
-		if (h % 10 == 9)
-			printf("Finish process : %d / %d\n",h + 1, HEIGHT);
-		for (int w = 0; w < WIDTH; ++w)
-			for (int s = 0; s < sample_times; ++s) {
+	int sample_times = 1;
+	int interval = 10;
+	for (int sample_times = 1; ; ++sample_times) {
+		time_t start_time=time(0);
+		for (int h = 0; h < HEIGHT; ++h) {
+			for (int w = 0; w < WIDTH; ++w) {
 				double x = (randf(-1.0, 1.0) + w - WIDTH / 2) / WIDTH;
 				double z = (randf(-1.0, 1.0) - h + HEIGHT / 2) / WIDTH;
 				Ray ray = Ray(camera.pos, Vec(x ,-1, z).normal());
-				pic[h][w] = pic[h][w] + tracing(ray, 0) * (1.0 / sample_times);
+				pic[h][w] = pic[h][w] + tracing(ray, 0);
 			}
+		}
+		time_t end_time=time(0);
+		printf("The %d time to sample. Time cost is %ld s\n", sample_times, end_time - start_time);
+
+		if (sample_times % interval == 0) {
+			output_picture(sample_times);
+			if (sample_times / interval == 10)
+				interval *= 10;
+		}
 	}
-	output_picture();
 	return 0;
 }
