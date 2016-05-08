@@ -1,5 +1,8 @@
 #include "constants.h"
 #include "vec.h"
+#include "ray.h"
+#include "model.h"
+#include "sphere.h"
 
 #include <string>
 #include <cstdio>
@@ -8,26 +11,18 @@
 #include <cstdlib>
 using namespace std;
 
-enum Material{DIFF, SPEC, REFR};	
-struct Sphere {
-	double radius;
-	Vec pos, light, color;
-	Material material;
-	Sphere(double _r, Vec _p, Vec _l, Vec _c, Material _m) :
-		radius(_r), pos(_p), light(_l), color(_c), material(_m) {}
-};
-
+// color of light source must be Vec()
 int sphere_total = 8;
 Sphere spheres[] = {//Scene: radius, position, emission, color, material 
-	Sphere(16.5,Vec(27,16.5,47),             Vec(),            Vec(1,1,1)*.999, SPEC),//ball1
-	Sphere(16.5,Vec(57,46.5,47),             Vec(),            Vec(0.6,0.6,0.8),REFR),//ball2
-	Sphere(1e5, Vec(0, 0, -(1e5)+47-16.5),   Vec(),            Vec(.25,.25,.25),DIFF),//bottom 
-	Sphere(1e5, Vec(0, 0, (1e5)+107+16.5),   Vec(),            Vec(.25,.25,.25),DIFF),//top
+	Sphere(1e5, Vec(0, 0, -(1e5)-16.5),   Vec(),            Vec(.25,.25,.25),DIFF),//bottom 
+	Sphere(1e5, Vec(0, 0, (1e5)+60+16.5),   Vec(),            Vec(.25,.25,.25),DIFF),//top
 //	Sphere(500, Vec(65, 26.5, (500)+106.7+16.5),Vec(1,1,1)*400,Vec(.25,.25,.25),DIFF),//light 
-	Sphere(2,   Vec(65, 26.5, -4+106+16.5),Vec(1,1,1)*400,Vec(.25,.25,.25),DIFF),//light 
-	Sphere(1e5, Vec(-(1e5)+17-16.5, 0, 0) ,  Vec(),            Vec(.75,.25,.25),DIFF),//left
-	Sphere(1e5, Vec((1e5)+117+16.5, 0, 0) ,  Vec(),            Vec(.75,.75,.25),DIFF),//right 
+	Sphere(2,   Vec(0, 26.5, -4+60+16.5),  Vec(1,1,1)*400,   Vec(),           DIFF),//light 
+	Sphere(1e5, Vec(-(1e5)-50-16.5, 0, 0) ,  Vec(),            Vec(.75,.25,.25),DIFF),//left
+	Sphere(1e5, Vec((1e5)+50+16.5, 0, 0) ,  Vec(),            Vec(.75,.75,.25),DIFF),//right 
 	Sphere(1e5, Vec(0, -(1e5)-10-16.5, 0),   Vec(),            Vec(1,1,1)*.888, DIFF),//back
+	Sphere(16.5,Vec(-40,16.5,0),             Vec(),            Vec(1,1,1)*.999, SPEC),//ball1
+	Sphere(16.5,Vec(-10,46.5,0),             Vec(),            Vec(0.6,0.6,0.8),REFR),//ball2
 
 	Sphere(1e5, Vec( 1e5+1,40.8,81.6), Vec(),Vec(.75,.25,.25),DIFF),//Left 
 	Sphere(1e5, Vec(-1e5+99,40.8,81.6),Vec(),Vec(.25,.25,.75),DIFF),//Rght 
@@ -40,31 +35,7 @@ Sphere spheres[] = {//Scene: radius, position, emission, color, material
 	Sphere(600, Vec(50,681.6-.27,81.6),Vec(12,12,12),  Vec(), DIFF) //Lite 
 };
 
-struct Ray {
-	Vec pos, dir;
-	Ray(Vec _p = Vec(), Vec _d = Vec()) :
-		pos(_p), dir(_d) {}
-	bool intersect_with_sphere(Sphere sphere, double& dist) {
-		Vec _x = dir;
-		Vec _y = sphere.pos - pos;
-		double b = _x * _y;
-		double _y_length = _y.length();
-		double c = _y_length * _y_length - sphere.radius * sphere.radius;
-		double delta = b * b - c;
-		if (delta < 0) return false;
-		delta = sqrt(delta);
-		double eps = 1e-4;
-		if (b - delta > eps) {
-			dist = b - delta;
-			return true;
-		} else
-		if (b + delta > eps) {
-			dist = b + delta;
-			return true;
-		} else
-			return false;
-	}
-};
+Model model;
 
 double randf(double l, double r) {
 	return (double)l + (double)rand() / RAND_MAX * (r - l);
@@ -79,37 +50,54 @@ double sqr(double x) {
 }
 
 // return -1 when no intersection
-int intersect(Ray ray, double& min_dist) {
-	double temp_dist;
+// reture -2 when intersecting with model
+int intersect(Ray ray, Vec& x, Vec& n) {
+	double min_dist, temp_dist;
 	int nearest_sphere = -1;
 	for (int i = 0; i < sphere_total; ++i)
 		if (ray.intersect_with_sphere(spheres[i], temp_dist))
 			if (nearest_sphere == -1 || temp_dist < min_dist) {
 				min_dist = temp_dist;
 				nearest_sphere = i;
+				x = ray.pos + ray.dir * min_dist;
+				n = (x-spheres[i].pos).normal();
 			}
+	double model_dist;
+	Vec model_n;
+	if (model.intersect(ray, model_dist, model_n))
+		if (nearest_sphere == -1 || model_dist < min_dist) {
+			x = ray.pos + ray.dir * model_dist;
+			n = model_n;
+			return -2;
+		}
 	return nearest_sphere;
 }
 
 Vec tracing(Ray ray, int depth, int explicit_parameter = 1) {
-	int nearest_sphere;
-	double min_dist;
-	nearest_sphere = intersect(ray, min_dist);
+	Vec x, n;
+	int nearest_sphere = intersect(ray, x, n);
 	if (nearest_sphere == -1) return Vec();
-	const Sphere& sphere = spheres[nearest_sphere];
 
-	Vec color = sphere.color;
-	double max_color = max(color.x,max(color.y,color.z));
-	if (depth > 4 || !max_color) {
-		if (randf(0, 1.0) < max_color) color = color * (1.0 / max_color);
-		else return sphere.light * explicit_parameter;
+	Vec color = Vec(0.5, 0.5, 0.5);
+	Material material = DIFF;
+	Vec light = Vec(0,0,0);
+	if (nearest_sphere >= 0) {
+		const Sphere& sphere = spheres[nearest_sphere];
+		color = sphere.color;
+		material = sphere.material;
+		light = sphere.light;
 	}
 
-	Vec x = ray.pos + ray.dir * min_dist;
-	Vec n = (x - sphere.pos).normal();
+	double max_color = max(color.x,max(color.y,color.z));
+	// light source has no color so it will return
+	if (depth > 4 || !max_color) {
+		if (randf(0, 1.0) < max_color) color = color * (1.0 / max_color);
+		else return light * explicit_parameter;
+	}
+
 	Vec nl = (n * ray.dir < 0) ? n : n * (-1);
 
-	if (sphere.material == DIFF) {
+	if (material == DIFF) {
 		double r1 = randf(0, 2.0 * M_PI);
 		double r2 = randf(0, 1.0);
 		double r2s = sqrt(r2);
@@ -130,18 +118,18 @@ Vec tracing(Ray ray, int depth, int explicit_parameter = 1) {
 				double sin_a = sqrt(1.0 - sqr(cos_a));
 				double phi = randf(0, 2.0 * M_PI);
 				Vec l = (su * cos(phi) * sin_a + sv * sin(phi) * sin_a + sw * cos_a).normal();
-				double temp_min_dist;
-				if (intersect(Ray(x, l), temp_min_dist) == i) {
+				Vec temp_x, temp_n;
+				if (intersect(Ray(x, l), temp_x, temp_n) == i) {
 					double omega = 2.0 * M_PI * (1.0 - cos_a_max);
 					extra = extra + color.blend(spheres[i].light * (l * nl) * omega) * M_1_PI;
 				}
 			}
 
-		return sphere.light * explicit_parameter + extra + color.blend(tracing(Ray(x, d), depth + 1, 0));
+		return light * explicit_parameter + extra + color.blend(tracing(Ray(x, d), depth + 1, 0));
 	} else
-	if (sphere.material == SPEC) {
+	if (material == SPEC) {
 		Vec d = (n * (-ray.dir * n) * 2 + ray.dir).normal();
-		return sphere.light + color.blend(tracing(Ray(x, d), depth + 1));
+		return light + color.blend(tracing(Ray(x, d), depth + 1));
 	} else {
 		// material == REFR
 		Ray reflect_ray = Ray(x, (n * (-ray.dir * n) * 2 + ray.dir).normal());
@@ -156,7 +144,7 @@ Vec tracing(Ray ray, int depth, int explicit_parameter = 1) {
 		double cos_value = -ray.dir * nl;
 		double sin_value = sqrt(1 - cos_value * cos_value);
 		if (sin_value / refract_rate > 1)
-			return sphere.light + color.blend(tracing(reflect_ray, depth + 1));
+			return light + color.blend(tracing(reflect_ray, depth + 1));
 		else {
 			sin_value /= refract_rate;
 			cos_value = sqrt(1 - sin_value * sin_value);
@@ -173,11 +161,11 @@ Vec tracing(Ray ray, int depth, int explicit_parameter = 1) {
  			double RP = Re / P;
  			double TP = Tr / (1 - P); 
  			if (depth <= 2)
- 				return sphere.light + color.blend(tracing(reflect_ray, depth + 1) * Re + tracing(refract_ray, depth + 1) * Tr);
+ 				return light + color.blend(tracing(reflect_ray, depth + 1) * Re + tracing(refract_ray, depth + 1) * Tr);
  			else if (randf(0, 1.0) < P)
- 				return sphere.light + color.blend(tracing(reflect_ray, depth + 1) * RP);
+ 				return light + color.blend(tracing(reflect_ray, depth + 1) * RP);
  			else
- 				return sphere.light + color.blend(tracing(refract_ray, depth + 1) * TP);
+ 				return light + color.blend(tracing(refract_ray, depth + 1) * TP);
 		}
 	}
 }
@@ -208,9 +196,12 @@ void output_picture(int sample_times) {
 }
 
 int main() {
-	Ray camera = Ray(Vec(67, 180, 77), Vec(0, -1, 0));
+	model.load_from_obj("models/Arma.obj");
+
+	Ray camera = Ray(Vec(0, 180, 30), Vec(0, -1, 0));
+//	Ray camera = Ray(Vec(0, 10, 0), Vec(0, -1, 0));
 	int sample_times = 1;
-	int interval = 10;
+	int interval = 1;
 	for (int sample_times = 1; ; ++sample_times) {
 		time_t start_time=time(0);
 		for (int h = 0; h < HEIGHT; ++h) {
@@ -218,7 +209,10 @@ int main() {
 				double x = (randf(-1.0, 1.0) + w - WIDTH / 2) / WIDTH;
 				double z = (randf(-1.0, 1.0) - h + HEIGHT / 2) / WIDTH;
 				Ray ray = Ray(camera.pos, Vec(x ,-1, z).normal());
-				pic[h][w] = pic[h][w] + tracing(ray, 0);
+				Vec tmp = tracing(ray, 0);
+//				if (tmp.x < 0 || tmp.y < 0 || tmp.z < 0)
+//					puts("ERROR");
+				pic[h][w] = pic[h][w] + tmp;
 			}
 		}
 		time_t end_time=time(0);
