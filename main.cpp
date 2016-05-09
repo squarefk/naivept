@@ -9,6 +9,8 @@
 #include <cmath>
 #include <ctime>
 #include <cstdlib>
+#include <vector>
+#include <utility>
 using namespace std;
 
 // color of light source must be Vec()
@@ -73,101 +75,145 @@ int intersect(Ray ray, Vec& x, Vec& n) {
 	return nearest_sphere;
 }
 
-Vec tracing(Ray ray, int depth, int explicit_parameter = 1) {
-	Vec x, n;
-	int nearest_sphere = intersect(ray, x, n);
-	if (nearest_sphere == -1) return Vec();
+Vec tracing(Ray ray) {
+	int explicit_parameter = 1;
+	Vec result;
+	vector< pair<Vec,Vec> > param;
 
-	Vec color = Vec(0.5, 0.5, 0.5);
-	Material material = DIFF;
-	Vec light = Vec(0,0,0);
-	if (nearest_sphere >= 0) {
-		const Sphere& sphere = spheres[nearest_sphere];
-		color = sphere.color;
-		material = sphere.material;
-		light = sphere.light;
-	}
+	for (int depth = 0; ; ++depth) {
+		Vec x, n;
+		int nearest_sphere = intersect(ray, x, n);
+		if (nearest_sphere == -1) {
+			result = Vec();
+			break;
+		}
 
-	double max_color = max(color.x,max(color.y,color.z));
-	// light source has no color so it will return
-	if (depth > 4 || !max_color) {
-		if (randf(0, 1.0) < max_color) color = color * (1.0 / max_color);
-		else return light * explicit_parameter;
-	}
+		Vec color = Vec(0.5, 0.5, 0.5);
+		Material material = DIFF;
+		Vec light = Vec(0,0,0);
+		if (nearest_sphere >= 0) {
+			const Sphere& sphere = spheres[nearest_sphere];
+			color = sphere.color;
+			material = sphere.material;
+			light = sphere.light;
+		}
 
-	Vec nl = (n * ray.dir < 0) ? n : n * (-1);
-
-	if (material == DIFF) {
-		double r1 = randf(0, 2.0 * M_PI);
-		double r2 = randf(0, 1.0);
-		double r2s = sqrt(r2);
-		Vec w = nl;
-		Vec u = (((abs(w.x) > 0.1) ? Vec(0, 1, 0) : Vec(1, 0, 0)) % w).normal();
-		Vec v = w % u;
-		Vec d = (u * cos(r1) * r2s + v * sin(r1) * r2s + w * sqrt(1 - r2)).normal();
-
-		// explicit lighting
-		Vec extra = Vec();
-		for (int i = 0; i < sphere_total; ++i)
-			if (spheres[i].light.x > 0 ||spheres[i].light.y > 0 ||spheres[i].light.z > 0) {
-				Vec sw = (spheres[i].pos - x).normal();
-				Vec su = (((abs(sw.x) > 0.1) ? Vec(0, 1, 0) : Vec(1, 0, 0)) % sw).normal();
-				Vec sv = sw % su;
-				double cos_a_max = sqrt(1 - sqr(spheres[i].radius) / ((spheres[i].pos - x) * (spheres[i].pos - x)));
-				double cos_a = randf(cos_a_max, 1.0);
-				double sin_a = sqrt(1.0 - sqr(cos_a));
-				double phi = randf(0, 2.0 * M_PI);
-				Vec l = (su * cos(phi) * sin_a + sv * sin(phi) * sin_a + sw * cos_a).normal();
-				Vec temp_x, temp_n;
-				if (intersect(Ray(x, l), temp_x, temp_n) == i) {
-					double omega = 2.0 * M_PI * (1.0 - cos_a_max);
-					extra = extra + color.blend(spheres[i].light * (l * nl) * omega) * M_1_PI;
-				}
+		double max_color = max(color.x,max(color.y,color.z));
+		// light source has no color so it will return
+		if (depth > 4 || !max_color) {
+			if (randf(0, 1.0) < max_color) color = color * (1.0 / max_color);
+			else {
+				result = light * explicit_parameter;
+				break;
 			}
-
-		return light * explicit_parameter + extra + color.blend(tracing(Ray(x, d), depth + 1, 0));
-	} else
-	if (material == SPEC) {
-		Vec d = (n * (-ray.dir * n) * 2 + ray.dir).normal();
-		return light + color.blend(tracing(Ray(x, d), depth + 1));
-	} else {
-		// material == REFR
-		Ray reflect_ray = Ray(x, (n * (-ray.dir * n) * 2 + ray.dir).normal());
-		bool go_into = true;
-		double air_speed = 1.5;
-		double solid_speed = 1.0;
-		double refract_rate = air_speed / solid_speed;
-		if (n * ray.dir > 0) {
-			go_into = false;
-			refract_rate = solid_speed / air_speed;
 		}
-		double cos_value = -ray.dir * nl;
-		double sin_value = sqrt(1 - cos_value * cos_value);
-		if (sin_value / refract_rate > 1)
-			return light + color.blend(tracing(reflect_ray, depth + 1));
-		else {
-			sin_value /= refract_rate;
-			cos_value = sqrt(1 - sin_value * sin_value);
-			Vec u = -nl;
-			Vec v = (nl * (-ray.dir * nl) + ray.dir).normal();
-			Ray refract_ray = Ray(x, (u * cos_value + v * sin_value).normal());
-			double a = air_speed - solid_speed;
-			double b = air_speed + solid_speed;
-			double c = 1 - (go_into ? -(ray.dir * nl) : (refract_ray.dir * n));
-			double R0 = a * a / b / b;
- 			double Re = R0 + (1 - R0) * c * c * c * c * c;
- 			double Tr = 1 - Re;
- 			double P = 0.25 + 0.5 * Re;
- 			double RP = Re / P;
- 			double TP = Tr / (1 - P); 
- 			if (depth <= 2)
- 				return light + color.blend(tracing(reflect_ray, depth + 1) * Re + tracing(refract_ray, depth + 1) * Tr);
- 			else if (randf(0, 1.0) < P)
- 				return light + color.blend(tracing(reflect_ray, depth + 1) * RP);
- 			else
- 				return light + color.blend(tracing(refract_ray, depth + 1) * TP);
+
+		Vec nl = (n * ray.dir < 0) ? n : n * (-1);
+
+		if (material == DIFF) {
+			double r1 = randf(0, 2.0 * M_PI);
+			double r2 = randf(0, 1.0);
+			double r2s = sqrt(r2);
+			Vec w = nl;
+			Vec u = (((abs(w.x) > 0.1) ? Vec(0, 1, 0) : Vec(1, 0, 0)) % w).normal();
+			Vec v = w % u;
+			Vec d = (u * cos(r1) * r2s + v * sin(r1) * r2s + w * sqrt(1 - r2)).normal();
+
+			// explicit lighting
+			Vec extra = Vec();
+			for (int i = 0; i < sphere_total; ++i)
+				if (spheres[i].light.x > 0 ||spheres[i].light.y > 0 ||spheres[i].light.z > 0) {
+					Vec sw = (spheres[i].pos - x).normal();
+					Vec su = (((abs(sw.x) > 0.1) ? Vec(0, 1, 0) : Vec(1, 0, 0)) % sw).normal();
+					Vec sv = sw % su;
+					double cos_a_max = sqrt(1 - sqr(spheres[i].radius) / ((spheres[i].pos - x) * (spheres[i].pos - x)));
+					double cos_a = randf(cos_a_max, 1.0);
+					double sin_a = sqrt(1.0 - sqr(cos_a));
+					double phi = randf(0, 2.0 * M_PI);
+					Vec l = (su * cos(phi) * sin_a + sv * sin(phi) * sin_a + sw * cos_a).normal();
+					Vec temp_x, temp_n;
+					if (intersect(Ray(x, l), temp_x, temp_n) == i) {
+						double omega = 2.0 * M_PI * (1.0 - cos_a_max);
+						extra = extra + color.blend(spheres[i].light * (l * nl) * omega) * M_1_PI;
+					}
+				}
+
+//			return light * explicit_parameter + extra + color.blend(tracing(Ray(x, d), depth + 1, 0));
+			param.push_back(make_pair(light * explicit_parameter + extra, color));
+			ray = Ray(x, d);
+			explicit_parameter = 0;
+		} else
+		if (material == SPEC) {
+			Vec d = (n * (-ray.dir * n) * 2 + ray.dir).normal();
+//			return light + color.blend(tracing(Ray(x, d), depth + 1));
+			param.push_back(make_pair(light, color));
+			ray = Ray(x, d);
+			explicit_parameter = 1;
+		} else {
+			// material == REFR
+			Ray reflect_ray = Ray(x, (n * (-ray.dir * n) * 2 + ray.dir).normal());
+			bool go_into = true;
+			double air_speed = 1.5;
+			double solid_speed = 1.0;
+			double refract_rate = air_speed / solid_speed;
+			if (n * ray.dir > 0) {
+				go_into = false;
+				refract_rate = solid_speed / air_speed;
+			}
+			double cos_value = -ray.dir * nl;
+			double sin_value = sqrt(1 - cos_value * cos_value);
+			if (sin_value / refract_rate > 1) {
+				// return light + color.blend(tracing(reflect_ray, depth + 1));			
+				param.push_back(make_pair(light, color));
+				ray = reflect_ray;
+				explicit_parameter = 1;
+			} else {
+				sin_value /= refract_rate;
+				cos_value = sqrt(1 - sin_value * sin_value);
+				Vec u = -nl;
+				Vec v = (nl * (-ray.dir * nl) + ray.dir).normal();
+				Ray refract_ray = Ray(x, (u * cos_value + v * sin_value).normal());
+				double a = air_speed - solid_speed;
+				double b = air_speed + solid_speed;
+				double c = 1 - (go_into ? -(ray.dir * nl) : (refract_ray.dir * n));
+				double R0 = a * a / b / b;
+	 			double Re = R0 + (1 - R0) * c * c * c * c * c;
+	 			double Tr = 1 - Re;
+	 			double P = 0.25 + 0.5 * Re;
+	 			double RP = Re / P;
+	 			double TP = Tr / (1 - P); 
+	 			if (depth <= 2) {
+	 				if (randf(0, 1.0) < Re) {
+	 					// return light + color.blend(tracing(reflect_ray, depth + 1));
+	 					param.push_back(make_pair(light, color));
+	 					ray = reflect_ray;
+						explicit_parameter = 1;
+	 				} else {
+	 					// return light + color.blend(tracing(refract_ray, depth + 1));
+	 					param.push_back(make_pair(light, color));
+	 					ray = refract_ray;
+						explicit_parameter = 1;
+	 				}
+	 			} else {
+	 				if (randf(0, 1.0) < P) {
+						// return light + color.blend(tracing(reflect_ray, depth + 1) * RP);
+	 					param.push_back(make_pair(light, color * RP));
+	 					ray = reflect_ray;
+						explicit_parameter = 1;
+		 			} else {
+	 					// return light + color.blend(tracing(refract_ray, depth + 1) * TP);
+	 					param.push_back(make_pair(light, color * TP));
+	 					ray = refract_ray;
+						explicit_parameter = 1;
+	 				}
+	 			}
+			}
 		}
 	}
+
+	for (int i = param.size() - 1; i >= 0; --i)
+		result = param[i].first + param[i].second.blend(result);
+	return result;
 }
 
 Vec pic[HEIGHT][WIDTH];
@@ -199,7 +245,6 @@ int main() {
 	model.load_from_obj("models/Arma.obj");
 
 	Ray camera = Ray(Vec(0, 180, 30), Vec(0, -1, 0));
-//	Ray camera = Ray(Vec(0, 10, 0), Vec(0, -1, 0));
 	int sample_times = 1;
 	int interval = 1;
 	for (int sample_times = 1; ; ++sample_times) {
@@ -209,9 +254,7 @@ int main() {
 				double x = (randf(-1.0, 1.0) + w - WIDTH / 2) / WIDTH;
 				double z = (randf(-1.0, 1.0) - h + HEIGHT / 2) / WIDTH;
 				Ray ray = Ray(camera.pos, Vec(x ,-1, z).normal());
-				Vec tmp = tracing(ray, 0);
-//				if (tmp.x < 0 || tmp.y < 0 || tmp.z < 0)
-//					puts("ERROR");
+				Vec tmp = tracing(ray);
 				pic[h][w] = pic[h][w] + tmp;
 			}
 		}

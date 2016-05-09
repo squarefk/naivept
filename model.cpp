@@ -35,30 +35,26 @@ void Model::build(int k, int l, int r) {
 	build(k+k+1,t[k].m+1,r);
 }
 
-void Model::detect(int k, const Ray& ray) {
-	if (t[k].l==t[k].r) {
-		double d;
-		bool ret = ray.intersect_with_triangle(triangles[t[k].l], d);
-		if (ret && d>1e-4 && (!_found || d < _dist)) {
-			_found = true;
-			_dist = d;
-			_n = ((triangles[t[k].l].q - triangles[t[k].l].p) %
-				(triangles[t[k].l].r - triangles[t[k].l].p)).normal();
-		}
-		return;
-	}
-	if (!ray.intersect_with_box(t[k].low, t[k].high)) return;
-	detect(k+k, ray);
-	detect(k+k+1, ray);
-}
-
-
 bool Model::intersect(const Ray& ray, double& dist, Vec& n) {
-	_found = false;
-	detect(1, ray);
-	dist = _dist;
-	n = _n;
-	return _found;
+	bool found = false;
+	queue[1]=1;
+	for (int l = 1, r = 1; l <= r; ++l) {
+		int k = queue[l];
+		if (t[k].l==t[k].r) {
+			double d;
+			bool ret = ray.intersect_with_triangle(triangles[t[k].l], d);
+			if (ret && d>1e-4 && (!found || d < dist)) {
+				found = true;
+				dist = d;
+				n = triangles[t[k].l].n;
+			}
+			continue;
+		}
+		if (!ray.intersect_with_box(t[k].low, t[k].high)) continue;
+		queue[++r] = k+k;
+		queue[++r] = k+k+1;
+	}
+	return found;
 }
 
 
@@ -95,5 +91,6 @@ void Model::load_from_obj(const char* file_name) {
 	printf("Finish loading obj from %s\n", file_name);
 
 	t = new Node[triangles.size() * 4];
+	queue = new int[triangles.size() * 4];
 	build(1,0,triangles.size()-1);
 }

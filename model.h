@@ -15,14 +15,11 @@ struct Node {
 class Model {
 	vector<Triangle> triangles;
 	Node* t;
-	bool _found;
-	double _dist;
-	Vec _n;
+	int* queue;
 
 public:
 	void load_from_obj(const char* file_name);
 
-	void detect(int k, const Ray& ray);
 	bool intersect(const Ray& ray, double& dist, Vec& n);
 	void build(int k, int l, int r);
 };
