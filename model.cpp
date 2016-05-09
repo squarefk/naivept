@@ -35,7 +35,7 @@ void Model::build(int k, int l, int r) {
 	build(k+k+1,t[k].m+1,r);
 }
 
-bool Model::intersect(const Ray& ray, float& dist, Vec& n) {
+bool Model::intersect(const Ray& ray, float& dist, Vec& n, Vec& c, Material& m) {
 	bool found = false;
 	queue[1]=1;
 	for (int l = 1, r = 1; l <= r; ++l) {
@@ -47,6 +47,8 @@ bool Model::intersect(const Ray& ray, float& dist, Vec& n) {
 				found = true;
 				dist = d;
 				n = triangles[t[k].l].n;
+				c = triangles[t[k].l].c;
+				m = triangles[t[k].l].m;
 			}
 			continue;
 		}
@@ -62,6 +64,8 @@ bool Model::intersect(const Ray& ray, float& dist, Vec& n) {
 			found = true;
 			dist = d;
 			n = walls[i].n;
+			c = walls[i].c;
+			m = walls[i].m;
 		}
 	}
 
@@ -82,19 +86,15 @@ void Model::load_from_obj(const char* file_name) {
 		} else if (buf[0] == 'v') {
 			float x, y, z;
 			fscanf(fp, "%f %f %f", &x, &y, &z);
-			float yy = -z;
-			float zz = y;
-			z = zz;
-			y = yy;
-			x = - x * 30 + 30;
-			y = y * 30 + 20;
-			z = z * 30 + 13.5;
+			x = x * 160 - 80;
+			y = y * 160 - 80;
+			z = z * 2 + 10;
 			v.push_back(Vec(x, y, z));
 		} else {
 			// buf[0] == 'f'
 			int x, y, z;
 			fscanf(fp, "%d %d %d", &x, &y, &z);
-			triangles.push_back(Triangle(v[x-1], v[y-1], v[z-1]));
+			triangles.push_back(Triangle(v[x-1], v[y-1], v[z-1], Vec(0.9,0.9,0.9), REFR));
 		}
 	}
 
@@ -119,20 +119,20 @@ void Model::load_from_obj(const char* file_name) {
 	Vec v110(x_wall_max,y_wall_max,z_wall_min);
 	Vec v111(x_wall_max,y_wall_max,z_wall_max);
 	// down
-	walls.push_back(Triangle(v000,v010,v100));
-	walls.push_back(Triangle(v110,v010,v100));
+	walls.push_back(Triangle(v000,v010,v100,Vec(0.75,0.75,0.75)));
+	walls.push_back(Triangle(v110,v010,v100,Vec(0.75,0.75,0.75)));
 	// left
-	walls.push_back(Triangle(v000,v010,v001));
-	walls.push_back(Triangle(v001,v010,v011));
+	walls.push_back(Triangle(v000,v010,v001,Vec(0.75,0.25,0.25)));
+	walls.push_back(Triangle(v001,v010,v011,Vec(0.75,0.25,0.25)));
 	// right
-	walls.push_back(Triangle(v110,v100,v101));
-	walls.push_back(Triangle(v111,v101,v110));
+	walls.push_back(Triangle(v110,v100,v101,Vec(0.25,0.25,0.75)));
+	walls.push_back(Triangle(v111,v101,v110,Vec(0.25,0.25,0.75)));
 	// up
-	walls.push_back(Triangle(v001,v111,v101));
-	walls.push_back(Triangle(v011,v001,v111));
+	walls.push_back(Triangle(v001,v111,v101,Vec(0.75,0.75,0.75)));
+	walls.push_back(Triangle(v011,v001,v111,Vec(0.75,0.75,0.75)));
 	// back
-	walls.push_back(Triangle(v000,v100,v101));
-	walls.push_back(Triangle(v000,v101,v001));
+	walls.push_back(Triangle(v000,v100,v101,Vec(0.75,0.75,0.75)));
+	walls.push_back(Triangle(v000,v101,v001,Vec(0.75,0.75,0.75)));
 
 
 	t = new Node[triangles.size() * 4];

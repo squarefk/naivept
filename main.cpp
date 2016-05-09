@@ -53,7 +53,7 @@ float sqr(float x) {
 
 // return -1 when no intersection
 // reture -2 when intersecting with model
-int intersect(Ray ray, Vec& x, Vec& n) {
+int intersect(Ray ray, Vec& x, Vec& n, Vec& c, Material& m) {
 	float min_dist, temp_dist;
 	int nearest_sphere = -1;
 	for (int i = 0; i < sphere_total; ++i)
@@ -63,13 +63,18 @@ int intersect(Ray ray, Vec& x, Vec& n) {
 				nearest_sphere = i;
 				x = ray.pos + ray.dir * min_dist;
 				n = (x-spheres[i].pos).normal();
+				c = spheres[i].color;
+				m = spheres[i].material;
 			}
 	float model_dist;
-	Vec model_n;
-	if (model.intersect(ray, model_dist, model_n))
+	Vec model_n, model_c;
+	Material model_m;
+	if (model.intersect(ray, model_dist, model_n, model_c, model_m))
 		if (nearest_sphere == -1 || model_dist < min_dist) {
 			x = ray.pos + ray.dir * model_dist;
 			n = model_n;
+			c = model_c;
+			m = model_m;
 			return -2;
 		}
 	return nearest_sphere;
@@ -81,19 +86,18 @@ Vec tracing(Ray ray) {
 	vector< pair<Vec,Vec> > param;
 
 	for (int depth = 0; ; ++depth) {
-		Vec x, n;
-		int nearest_sphere = intersect(ray, x, n);
+		Vec x, n, color;
+		Material material = DIFF;
+		
+		int nearest_sphere = intersect(ray, x, n, color, material);
 		if (nearest_sphere == -1) {
 			result = Vec();
 			break;
 		}
 
-		Vec color = Vec(0.5, 0.5, 0.5);
-		Material material = DIFF;
 		Vec light = Vec(0,0,0);
 		if (nearest_sphere >= 0) {
 			const Sphere& sphere = spheres[nearest_sphere];
-			color = sphere.color;
 			material = sphere.material;
 			light = sphere.light;
 		}
@@ -131,8 +135,9 @@ Vec tracing(Ray ray) {
 					float sin_a = sqrt(1.0 - sqr(cos_a));
 					float phi = randf(0, 2.0 * M_PI);
 					Vec l = (su * cos(phi) * sin_a + sv * sin(phi) * sin_a + sw * cos_a).normal();
-					Vec temp_x, temp_n;
-					if (intersect(Ray(x, l), temp_x, temp_n) == i) {
+					Vec temp_x, temp_n, temp_c;
+					Material temp_m;
+					if (intersect(Ray(x, l), temp_x, temp_n, temp_c, temp_m) == i) {
 						float omega = 2.0 * M_PI * (1.0 - cos_a_max);
 						extra = extra + color.blend(spheres[i].light * (l * nl) * omega) * M_1_PI;
 					}
@@ -242,7 +247,7 @@ void output_picture(int sample_times) {
 }
 
 int main() {
-	model.load_from_obj("models/Arma.obj");
+	model.load_from_obj("models/water/water.obj");
 
 	Ray camera = Ray(Vec(0, 180, 30), Vec(0, -1, 0));
 	int sample_times = 1;

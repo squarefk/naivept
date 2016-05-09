@@ -2,8 +2,7 @@
 #define SPHERE_H
 
 #include "vec.h"
-
-enum Material{DIFF, SPEC, REFR};
+#include "constants.h"
 
 struct Sphere {
 	float radius;
