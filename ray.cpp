@@ -7,16 +7,15 @@ Ray::Ray(Vec _p, Vec _d) {
 	dir = _d;
 }
 
-bool Ray::intersect_with_sphere(const Sphere& sphere, double& dist) const {
+bool Ray::intersect_with_sphere(const Sphere& sphere, float& dist) const {
 	Vec _x = dir;
 	Vec _y = sphere.pos - pos;
-	double b = _x * _y;
-	double _y_length = _y.length();
-	double c = _y_length * _y_length - sphere.radius * sphere.radius;
-	double delta = b * b - c;
+	float b = _x * _y;
+	float c = _y * _y - sphere.radius * sphere.radius;
+	float delta = b * b - c;
 	if (delta < 0) return false;
 	delta = sqrt(delta);
-	double eps = 1e-4;
+	float eps = 1e-4f;
 	if (b - delta > eps) {
 		dist = b - delta;
 		return true;
@@ -28,12 +27,12 @@ bool Ray::intersect_with_sphere(const Sphere& sphere, double& dist) const {
 		return false;
 }
 
-bool Ray::intersect_with_triangle(const Triangle& tri, double& dist) const {
-	double t,u,v;
+bool Ray::intersect_with_triangle(const Triangle& tri, float& dist) const {
+	float t,u,v;
 	Vec E1 = tri.q - tri.p;
 	Vec E2 = tri.r - tri.p;
 	Vec P = dir % E2;
-	double det = E1 * P;
+	float det = E1 * P;
 	Vec T;
 	if (det > 0) {
 		T = pos - tri.p;
@@ -52,7 +51,7 @@ bool Ray::intersect_with_triangle(const Triangle& tri, double& dist) const {
 	dist = t / det;
 	return true;
 
-	double fInvDet = 1.0f / det;
+	float fInvDet = 1.0f / det;
 	t *= fInvDet;
 	u *= fInvDet;
 	v *= fInvDet;
@@ -61,8 +60,8 @@ bool Ray::intersect_with_triangle(const Triangle& tri, double& dist) const {
 
 bool Ray::intersect_with_box(const Vec& low, const Vec& high) const {
 	Vec inv = Vec(1.0/dir.x, 1.0/dir.y, 1.0/dir.z);
-	double tmin=-1e30,tmax=1e30;
-	double _tmin,_tmax;
+	float tmin=-1e30,tmax=1e30;
+	float _tmin,_tmax;
 	bool sign;
 #define TEST(t)\
 	if (fabs(dir.t)>1e-4)\

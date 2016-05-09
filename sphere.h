@@ -6,10 +6,10 @@
 enum Material{DIFF, SPEC, REFR};
 
 struct Sphere {
-	double radius;
+	float radius;
 	Vec pos, light, color;
 	Material material;
-	Sphere(double _r, Vec _p, Vec _l, Vec _c, Material _m);
+	Sphere(float _r, Vec _p, Vec _l, Vec _c, Material _m);
 };
 
 

@@ -14,12 +14,12 @@
 using namespace std;
 
 // color of light source must be Vec()
-int sphere_total = 8;
+int sphere_total = 1;
 Sphere spheres[] = {//Scene: radius, position, emission, color, material 
+	Sphere(2,   Vec(0, 0, -4+60+16.5),  Vec(1,1,1)*400,   Vec(),           DIFF),//light 
 	Sphere(1e5, Vec(0, 0, -(1e5)-16.5),   Vec(),            Vec(.25,.25,.25),DIFF),//bottom 
 	Sphere(1e5, Vec(0, 0, (1e5)+60+16.5),   Vec(),            Vec(.25,.25,.25),DIFF),//top
 //	Sphere(500, Vec(65, 26.5, (500)+106.7+16.5),Vec(1,1,1)*400,Vec(.25,.25,.25),DIFF),//light 
-	Sphere(2,   Vec(0, 26.5, -4+60+16.5),  Vec(1,1,1)*400,   Vec(),           DIFF),//light 
 	Sphere(1e5, Vec(-(1e5)-50-16.5, 0, 0) ,  Vec(),            Vec(.75,.25,.25),DIFF),//left
 	Sphere(1e5, Vec((1e5)+50+16.5, 0, 0) ,  Vec(),            Vec(.75,.75,.25),DIFF),//right 
 	Sphere(1e5, Vec(0, -(1e5)-10-16.5, 0),   Vec(),            Vec(1,1,1)*.888, DIFF),//back
@@ -39,22 +39,22 @@ Sphere spheres[] = {//Scene: radius, position, emission, color, material
 
 Model model;
 
-double randf(double l, double r) {
-	return (double)l + (double)rand() / RAND_MAX * (r - l);
+float randf(float l, float r) {
+	return (float)l + (float)rand() / RAND_MAX * (r - l);
 }
 
-double randi(int l,int r) {
+float randi(int l,int r) {
 	return l + rand() % (r - l + 1);
 }
 
-double sqr(double x) {
+float sqr(float x) {
 	return x * x;
 }
 
 // return -1 when no intersection
 // reture -2 when intersecting with model
 int intersect(Ray ray, Vec& x, Vec& n) {
-	double min_dist, temp_dist;
+	float min_dist, temp_dist;
 	int nearest_sphere = -1;
 	for (int i = 0; i < sphere_total; ++i)
 		if (ray.intersect_with_sphere(spheres[i], temp_dist))
@@ -64,7 +64,7 @@ int intersect(Ray ray, Vec& x, Vec& n) {
 				x = ray.pos + ray.dir * min_dist;
 				n = (x-spheres[i].pos).normal();
 			}
-	double model_dist;
+	float model_dist;
 	Vec model_n;
 	if (model.intersect(ray, model_dist, model_n))
 		if (nearest_sphere == -1 || model_dist < min_dist) {
@@ -98,7 +98,7 @@ Vec tracing(Ray ray) {
 			light = sphere.light;
 		}
 
-		double max_color = max(color.x,max(color.y,color.z));
+		float max_color = max(color.x,max(color.y,color.z));
 		// light source has no color so it will return
 		if (depth > 4 || !max_color) {
 			if (randf(0, 1.0) < max_color) color = color * (1.0 / max_color);
@@ -111,9 +111,9 @@ Vec tracing(Ray ray) {
 		Vec nl = (n * ray.dir < 0) ? n : n * (-1);
 
 		if (material == DIFF) {
-			double r1 = randf(0, 2.0 * M_PI);
-			double r2 = randf(0, 1.0);
-			double r2s = sqrt(r2);
+			float r1 = randf(0, 2.0 * M_PI);
+			float r2 = randf(0, 1.0);
+			float r2s = sqrt(r2);
 			Vec w = nl;
 			Vec u = (((abs(w.x) > 0.1) ? Vec(0, 1, 0) : Vec(1, 0, 0)) % w).normal();
 			Vec v = w % u;
@@ -126,14 +126,14 @@ Vec tracing(Ray ray) {
 					Vec sw = (spheres[i].pos - x).normal();
 					Vec su = (((abs(sw.x) > 0.1) ? Vec(0, 1, 0) : Vec(1, 0, 0)) % sw).normal();
 					Vec sv = sw % su;
-					double cos_a_max = sqrt(1 - sqr(spheres[i].radius) / ((spheres[i].pos - x) * (spheres[i].pos - x)));
-					double cos_a = randf(cos_a_max, 1.0);
-					double sin_a = sqrt(1.0 - sqr(cos_a));
-					double phi = randf(0, 2.0 * M_PI);
+					float cos_a_max = sqrt(1 - sqr(spheres[i].radius) / ((spheres[i].pos - x) * (spheres[i].pos - x)));
+					float cos_a = randf(cos_a_max, 1.0);
+					float sin_a = sqrt(1.0 - sqr(cos_a));
+					float phi = randf(0, 2.0 * M_PI);
 					Vec l = (su * cos(phi) * sin_a + sv * sin(phi) * sin_a + sw * cos_a).normal();
 					Vec temp_x, temp_n;
 					if (intersect(Ray(x, l), temp_x, temp_n) == i) {
-						double omega = 2.0 * M_PI * (1.0 - cos_a_max);
+						float omega = 2.0 * M_PI * (1.0 - cos_a_max);
 						extra = extra + color.blend(spheres[i].light * (l * nl) * omega) * M_1_PI;
 					}
 				}
@@ -153,15 +153,15 @@ Vec tracing(Ray ray) {
 			// material == REFR
 			Ray reflect_ray = Ray(x, (n * (-ray.dir * n) * 2 + ray.dir).normal());
 			bool go_into = true;
-			double air_speed = 1.5;
-			double solid_speed = 1.0;
-			double refract_rate = air_speed / solid_speed;
+			float air_speed = 1.5;
+			float solid_speed = 1.0;
+			float refract_rate = air_speed / solid_speed;
 			if (n * ray.dir > 0) {
 				go_into = false;
 				refract_rate = solid_speed / air_speed;
 			}
-			double cos_value = -ray.dir * nl;
-			double sin_value = sqrt(1 - cos_value * cos_value);
+			float cos_value = -ray.dir * nl;
+			float sin_value = sqrt(1 - cos_value * cos_value);
 			if (sin_value / refract_rate > 1) {
 				// return light + color.blend(tracing(reflect_ray, depth + 1));			
 				param.push_back(make_pair(light, color));
@@ -173,15 +173,15 @@ Vec tracing(Ray ray) {
 				Vec u = -nl;
 				Vec v = (nl * (-ray.dir * nl) + ray.dir).normal();
 				Ray refract_ray = Ray(x, (u * cos_value + v * sin_value).normal());
-				double a = air_speed - solid_speed;
-				double b = air_speed + solid_speed;
-				double c = 1 - (go_into ? -(ray.dir * nl) : (refract_ray.dir * n));
-				double R0 = a * a / b / b;
-	 			double Re = R0 + (1 - R0) * c * c * c * c * c;
-	 			double Tr = 1 - Re;
-	 			double P = 0.25 + 0.5 * Re;
-	 			double RP = Re / P;
-	 			double TP = Tr / (1 - P); 
+				float a = air_speed - solid_speed;
+				float b = air_speed + solid_speed;
+				float c = 1 - (go_into ? -(ray.dir * nl) : (refract_ray.dir * n));
+				float R0 = a * a / b / b;
+	 			float Re = R0 + (1 - R0) * c * c * c * c * c;
+	 			float Tr = 1 - Re;
+	 			float P = 0.25 + 0.5 * Re;
+	 			float RP = Re / P;
+	 			float TP = Tr / (1 - P); 
 	 			if (depth <= 2) {
 	 				if (randf(0, 1.0) < Re) {
 	 					// return light + color.blend(tracing(reflect_ray, depth + 1));
@@ -218,13 +218,13 @@ Vec tracing(Ray ray) {
 
 Vec pic[HEIGHT][WIDTH];
 
-double truncate(double value) {
+float truncate(float value) {
 	if (value > 1) return 1.0;
 	if (value < 0) return 0;
 	return value;
 }
 
-int pixel_int(double value) {
+int pixel_int(float value) {
 	return int(pow(truncate(value), 1.0 / 2.2) * 255.0 + 0.5);
 }
 
@@ -251,8 +251,8 @@ int main() {
 		time_t start_time=time(0);
 		for (int h = 0; h < HEIGHT; ++h) {
 			for (int w = 0; w < WIDTH; ++w) {
-				double x = (randf(-1.0, 1.0) + w - WIDTH / 2) / WIDTH;
-				double z = (randf(-1.0, 1.0) - h + HEIGHT / 2) / WIDTH;
+				float x = (randf(-1.0, 1.0) + w - WIDTH / 2) / WIDTH;
+				float z = (randf(-1.0, 1.0) - h + HEIGHT / 2) / WIDTH;
 				Ray ray = Ray(camera.pos, Vec(x ,-1, z).normal());
 				Vec tmp = tracing(ray);
 				pic[h][w] = pic[h][w] + tmp;

@@ -2,18 +2,18 @@
 
 #include <cmath>
 
-Vec::Vec(double _x, double _y, double _z) {
+Vec::Vec(float _x, float _y, float _z) {
 	x = _x;
 	y = _y;
 	z = _z;
 }
 
-double Vec::length() const {
+float Vec::length() const {
 		return sqrt(x * x + y * y + z * z);
 }
 
 Vec Vec::normal() const {
-	double _length = length();
+	float _length = length();
 	return Vec(x / _length, y / _length, z / _length);
 }
 
@@ -33,11 +33,11 @@ Vec Vec::operator - (const Vec& rhs) const {
 	return Vec(x - rhs.x, y - rhs.y, z - rhs.z);
 }
 
-double Vec::operator * (const Vec& rhs) const {
+float Vec::operator * (const Vec& rhs) const {
 	return x * rhs.x + y * rhs.y + z * rhs.z;
 }
 
-Vec Vec::operator * (const double rhs) const {
+Vec Vec::operator * (const float rhs) const {
 	return Vec(x * rhs, y * rhs, z * rhs);
 }
 

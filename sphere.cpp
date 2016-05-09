@@ -1,6 +1,6 @@
 #include "sphere.h"
 	
-Sphere::Sphere(double _r, Vec _p, Vec _l, Vec _c, Material _m) {
+Sphere::Sphere(float _r, Vec _p, Vec _l, Vec _c, Material _m) {
 	radius = _r;
 	pos = _p;
 	light = _l;
