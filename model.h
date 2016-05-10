@@ -15,7 +15,6 @@ struct Node {
 
 class Model {
 	vector<Triangle> triangles;
-	vector<Triangle> walls;
 
 	Node* t;
 	int* queue;

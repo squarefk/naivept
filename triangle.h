@@ -6,7 +6,7 @@
 
 class Triangle{
 public:
-	Vec p, q, r, n, c;
+	Vec p, q, r, n, c, np, nq, nr;
 	Material m;
 	Triangle(Vec _p, Vec _q, Vec _r, Vec _c = Vec(0.5,0.5,0.5), Material _m = DIFF);
 };

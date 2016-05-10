@@ -16,15 +16,7 @@ using namespace std;
 // color of light source must be Vec()
 int sphere_total = 1;
 Sphere spheres[] = {//Scene: radius, position, emission, color, material 
-	Sphere(2,   Vec(0, 0, -4+60+16.5),  Vec(1,1,1)*400,   Vec(),           DIFF),//light 
-	Sphere(1e5, Vec(0, 0, -(1e5)-16.5),   Vec(),            Vec(.25,.25,.25),DIFF),//bottom 
-	Sphere(1e5, Vec(0, 0, (1e5)+60+16.5),   Vec(),            Vec(.25,.25,.25),DIFF),//top
-//	Sphere(500, Vec(65, 26.5, (500)+106.7+16.5),Vec(1,1,1)*400,Vec(.25,.25,.25),DIFF),//light 
-	Sphere(1e5, Vec(-(1e5)-50-16.5, 0, 0) ,  Vec(),            Vec(.75,.25,.25),DIFF),//left
-	Sphere(1e5, Vec((1e5)+50+16.5, 0, 0) ,  Vec(),            Vec(.75,.75,.25),DIFF),//right 
-	Sphere(1e5, Vec(0, -(1e5)-10-16.5, 0),   Vec(),            Vec(1,1,1)*.888, DIFF),//back
-	Sphere(16.5,Vec(-40,16.5,0),             Vec(),            Vec(1,1,1)*.999, SPEC),//ball1
-	Sphere(16.5,Vec(-10,46.5,0),             Vec(),            Vec(0.6,0.6,0.8),REFR),//ball2
+	Sphere(5,   Vec(0, 25, 42.5),  Vec(1,1,1)*50,   Vec(),           DIFF),//light 
 
 	Sphere(1e5, Vec( 1e5+1,40.8,81.6), Vec(),Vec(.75,.25,.25),DIFF),//Left 
 	Sphere(1e5, Vec(-1e5+99,40.8,81.6),Vec(),Vec(.25,.25,.75),DIFF),//Rght 
@@ -158,8 +150,8 @@ Vec tracing(Ray ray) {
 			// material == REFR
 			Ray reflect_ray = Ray(x, (n * (-ray.dir * n) * 2 + ray.dir).normal());
 			bool go_into = true;
-			float air_speed = 1.5;
-			float solid_speed = 1.0;
+			float air_speed = 1.0;
+			float solid_speed = 0.75;
 			float refract_rate = air_speed / solid_speed;
 			if (n * ray.dir > 0) {
 				go_into = false;
@@ -249,22 +241,23 @@ void output_picture(int sample_times) {
 int main() {
 	model.load_from_obj("models/water/water.obj");
 
-	Ray camera = Ray(Vec(0, 180, 30), Vec(0, -1, 0));
+	Ray camera = Ray(Vec(0, -100, 0), Vec(0, 1, 0));
 	int sample_times = 1;
 	int interval = 1;
 	for (int sample_times = 1; ; ++sample_times) {
 		time_t start_time=time(0);
 		for (int h = 0; h < HEIGHT; ++h) {
+			fprintf(stderr,"\rRendering %.2f%%", 100.0 * (h+1) / HEIGHT);
 			for (int w = 0; w < WIDTH; ++w) {
 				float x = (randf(-1.0, 1.0) + w - WIDTH / 2) / WIDTH;
 				float z = (randf(-1.0, 1.0) - h + HEIGHT / 2) / WIDTH;
-				Ray ray = Ray(camera.pos, Vec(x ,-1, z).normal());
+				Ray ray = Ray(camera.pos, Vec(x ,1, z).normal());
 				Vec tmp = tracing(ray);
 				pic[h][w] = pic[h][w] + tmp;
 			}
 		}
 		time_t end_time=time(0);
-		printf("The %d time to sample. Time cost is %ld s\n", sample_times, end_time - start_time);
+		fprintf(stderr, "\nThe %d time to sample. Time cost is %ld s\n", sample_times, end_time - start_time);
 
 		if (sample_times % interval == 0) {
 			output_picture(sample_times);

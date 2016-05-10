@@ -3,7 +3,7 @@
 
 enum Material{DIFF, SPEC, REFR};
 
-const int HEIGHT = 768;
-const int WIDTH = 1024;
+const int HEIGHT = 512;
+const int WIDTH = 512;
 
 #endif

@@ -5,10 +5,10 @@
 #include "triangle.h"
 
 struct Ray {
-	Vec pos, dir;
+	Vec pos, dir, inv;
 	Ray(Vec _p = Vec(), Vec _d = Vec());
 	bool intersect_with_sphere(const Sphere& sphere, float& dist) const;
-	bool intersect_with_triangle(const Triangle& tri, float& dist) const;
+	bool intersect_with_triangle(const Triangle& tri, float& dist, Vec& norm) const;
 	bool intersect_with_box(const Vec& low, const Vec& high) const;
 };
 

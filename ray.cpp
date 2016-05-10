@@ -5,6 +5,7 @@
 Ray::Ray(Vec _p, Vec _d) {
 	pos = _p;
 	dir = _d;
+	inv = Vec(1.0/dir.x, 1.0/dir.y, 1.0/dir.z);
 }
 
 bool Ray::intersect_with_sphere(const Sphere& sphere, float& dist) const {
@@ -27,7 +28,7 @@ bool Ray::intersect_with_sphere(const Sphere& sphere, float& dist) const {
 		return false;
 }
 
-bool Ray::intersect_with_triangle(const Triangle& tri, float& dist) const {
+bool Ray::intersect_with_triangle(const Triangle& tri, float& dist, Vec& norm) const {
 	float t,u,v;
 	Vec E1 = tri.q - tri.p;
 	Vec E2 = tri.r - tri.p;
@@ -48,18 +49,19 @@ bool Ray::intersect_with_triangle(const Triangle& tri, float& dist) const {
 	if (v<0 || u+v>det) return false;
 	t = E2 * Q;
 
-	dist = t / det;
-	return true;
-
 	float fInvDet = 1.0f / det;
 	t *= fInvDet;
 	u *= fInvDet;
 	v *= fInvDet;
+
+	dist = t;
+	norm = tri.np * (1.0 - u - v) + tri.nq * u + tri.nr * v;
+
 	return true;
 }
 
+// modify tmin > tmax
 bool Ray::intersect_with_box(const Vec& low, const Vec& high) const {
-	Vec inv = Vec(1.0/dir.x, 1.0/dir.y, 1.0/dir.z);
 	float tmin=-1e30,tmax=1e30;
 	float _tmin,_tmax;
 	bool sign;
@@ -71,9 +73,9 @@ bool Ray::intersect_with_box(const Vec& low, const Vec& high) const {
 		_tmax=((sign?low.t:high.t)-pos.t)*inv.t;\
 		if (_tmin > tmin) tmin=_tmin;\
 		if (_tmax < tmax) tmax=_tmax;\
-		if (tmin+1e-4 > tmax) return false;\
+		if (tmin > tmax) return false;\
 	}
 	TEST(x); TEST(y); TEST(z);
 #undef TEST
-	return tmax > 1e-4;
+	return true;
 }
