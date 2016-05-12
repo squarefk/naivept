@@ -91,7 +91,7 @@ void Model::load_from_obj(const char* file_name) {
 			idx.push_back(x);
 			idy.push_back(y);
 			idz.push_back(z);
-			if (min(v[x-1].z,min(v[y-1].z,v[z-1].z)) < 0) continue;
+			if (min(v[x-1].z,min(v[y-1].z,v[z-1].z)) < -50) continue;
 			Vec temp_n = ((v[x-1]-v[z-1]) % (v[y-1]-v[z-1])).normal();
 			n[x-1] = n[x-1] + temp_n; ++s[x-1];
 			n[y-1] = n[y-1] + temp_n; ++s[y-1];

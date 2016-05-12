@@ -14,10 +14,12 @@ for i in range(101):
 		output.write( 'v %.5f %.5f %.5f\n' % (x,y,2.0*math.sin(x*20) ))
 	id = id + 1
 	a[i][101] = id
-	output.write( 'v %.5f %.5f %.5f\n' % (0.01*i,1,-20))
+	output.write( 'v %.5f %.5f %.5f\n' % (0.01*i,0,-30))
 
 
 for i in range(100):
-	for j in range(101):
-		output.write( 'f %d %d %d\n' % (a[i][j],a[i][j+1],a[i+1][j]) )
-		output.write( 'f %d %d %d\n' % (a[i+1][j],a[i][j+1],a[i+1][j+1]) )
+	for j in range(100):
+		output.write( 'f %d %d %d\n' % (a[i][j],a[i+1][j],a[i][j+1]) )
+		output.write( 'f %d %d %d\n' % (a[i][j+1],a[i+1][j],a[i+1][j+1]) )
+	output.write( 'f %d %d %d\n' % (a[i][101],a[i+1][101],a[i][0]) )
+	output.write( 'f %d %d %d\n' % (a[i][0],a[i+1][101],a[i+1][0]) )
