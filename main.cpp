@@ -16,8 +16,10 @@
 using namespace std;
 
 // color of light source must be Vec()
-int sphere_total = 0;
+int sphere_total = 1;
 Sphere spheres[] = {//Scene: radius, position, emission, color, material 
+	Sphere(15,Vec(-30, 20 ,-35),       Vec(),Vec(1,1,1)*.999, SPEC),//Mirr 
+
 	Sphere(5,   Vec(0, 25, 42.5),  Vec(1,1,1)*50,   Vec(),           DIFF),//light 
 
 	Sphere(1e5, Vec( 1e5+1,40.8,81.6), Vec(),Vec(.75,.25,.25),DIFF),//Left 
@@ -50,7 +52,7 @@ float sqr(float x) {
 int intersect(Ray ray, Vec& x, Vec& n, Vec& c, Material& m) {
 	float min_dist, temp_dist;
 	int nearest_sphere = -1;
-	/*
+	
 	for (int i = 0; i < sphere_total; ++i)
 		if (ray.intersect_with_sphere(spheres[i], temp_dist))
 			if (nearest_sphere == -1 || temp_dist < min_dist) {
@@ -61,7 +63,7 @@ int intersect(Ray ray, Vec& x, Vec& n, Vec& c, Material& m) {
 				c = spheres[i].color;
 				m = spheres[i].material;
 			}
-	*/
+	
 	float model_dist;
 	Vec model_n, model_c;
 	Material model_m;

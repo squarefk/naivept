@@ -78,7 +78,7 @@ void Model::load_from_obj(const char* file_name) {
 			fscanf(fp, "%f %f %f", &x, &y, &z);
 			x = x * 100 - 50;
 			y = y * 50;
-			z = z * 1.5 - 15;
+			z = z * 3 - 10;
 			v.push_back(Vec(x, y, z));
 			n.push_back(Vec());
 			s.push_back(0);
