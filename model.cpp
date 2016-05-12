@@ -57,14 +57,13 @@ bool Model::intersect(const Ray& ray, float& d, Vec& n, Vec& c, Material& m) {
 		queue[++r] = k+k;
 		queue[++r] = k+k+1;
 	}
-
 	return found;
 }
 
 
 void Model::load_from_obj(const char* file_name) {
 	FILE* fp =fopen(file_name, "r");
-	printf("Start loading obj from %s\n", file_name);
+	fprintf(stderr, "Start loading obj from %s\n", file_name);
 
 	char buf[256];
 	int lineNumber = 0;
@@ -107,7 +106,7 @@ void Model::load_from_obj(const char* file_name) {
 	}
 
 	fclose(fp);
-	printf("Finish loading obj from %s\n", file_name);
+	fprintf(stderr, "Finish loading obj from %s\n", file_name);
 
 
 	// load walls
