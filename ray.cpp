@@ -1,10 +1,15 @@
 #include "ray.h"
 
 #include <cmath>
+#include <cstdio>
 
 Ray::Ray(Vec _p, Vec _d) {
 	pos = _p;
 	dir = _d;
+	// equal to zero if new ray
+	if (fabs(_d.length()-1.0)>1e-4 && _d.length()>1e-4) {
+		fprintf(stderr, "Error on the direction of the ray.\n");
+	}
 	inv = Vec(1.0/dir.x, 1.0/dir.y, 1.0/dir.z);
 }
 
@@ -41,12 +46,13 @@ bool Ray::intersect_with_triangle(const Triangle& tri, float& dist, Vec& norm) c
 		T = tri.p - pos;
 		det = -det;
 	}
-	if (det < 1e-4) return false;
+	static float eps = 1e-3;
+	if (det < eps) return false;
 	u = T * P;
-	if (u<0 || u>det) return false;
+	if (u < -eps || u > det + eps) return false;
 	Vec Q = T % E1;
 	v = dir * Q;
-	if (v<0 || u+v>det) return false;
+	if (v < -eps || u + v > det + eps) return false;
 	t = E2 * Q;
 
 	float fInvDet = 1.0f / det;
@@ -55,7 +61,7 @@ bool Ray::intersect_with_triangle(const Triangle& tri, float& dist, Vec& norm) c
 	v *= fInvDet;
 
 	dist = t;
-	norm = tri.np * (1.0 - u - v) + tri.nq * u + tri.nr * v;
+	norm = (tri.np * (1.0 - u - v) + tri.nq * u + tri.nr * v).normal();
 
 	return true;
 }

@@ -78,7 +78,7 @@ void Model::load_from_obj(const char* file_name) {
 			fscanf(fp, "%f %f %f", &x, &y, &z);
 			x = x * 100 - 50;
 			y = y * 50;
-			z = z * 3 - 10;
+			z = z * 1 - 10;
 			v.push_back(Vec(x, y, z));
 			n.push_back(Vec());
 			s.push_back(0);
@@ -99,10 +99,10 @@ void Model::load_from_obj(const char* file_name) {
 	}
 
 	for (int i = 0; i < triangles.size(); ++i) {
-		if (min(triangles[i].p.z,min(triangles[i].q.z,triangles[i].r.z)) < 0) continue;
-		triangles[i].np = n[idx[i]-1] * (1.0 / s[idx[i]-1]);
-		triangles[i].nq = n[idy[i]-1] * (1.0 / s[idy[i]-1]);
-		triangles[i].nr = n[idz[i]-1] * (1.0 / s[idz[i]-1]);
+		if (min(triangles[i].p.z,min(triangles[i].q.z,triangles[i].r.z)) < -50) continue;
+		triangles[i].np = (n[idx[i]-1] * (1.0 / s[idx[i]-1])).normal();
+		triangles[i].nq = (n[idy[i]-1] * (1.0 / s[idy[i]-1])).normal();
+		triangles[i].nr = (n[idz[i]-1] * (1.0 / s[idz[i]-1])).normal();
 	}
 
 	fclose(fp);

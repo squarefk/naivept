@@ -14,7 +14,7 @@ for i in range(101):
 		output.write( 'v %.5f %.5f %.5f\n' % (x,y,(math.sin(x*30)+math.sin(y*25)+math.sin(15*x+17*y))/3.0 ))
 	id = id + 1
 	a[i][101] = id
-	output.write( 'v %.5f %.5f %.5f\n' % (0.01*i,0,-30))
+	output.write( 'v %.5f %.5f %.5f\n' % (0.01*i,0,-50))
 
 
 for i in range(100):

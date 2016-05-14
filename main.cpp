@@ -35,12 +35,11 @@ Sphere spheres[] = {//Scene: radius, position, emission, color, material
 
 Model model;
 
-float randf(float l, float r) {
-	return (float)l + (float)rand() / RAND_MAX * (r - l);
-}
-
-float randi(int l,int r) {
-	return l + rand() % (r - l + 1);
+// xorshift PRNG
+float randf() {
+	static unsigned int x = 123456789, y = 362436069, z = 521288629, w = 88675123;
+	unsigned int t = x ^ (x << 11); x = y; y = z; z = w;
+	return ( w = (w ^ (w >> 19)) ^ (t ^ (t >> 8)) ) * (1.0f / 4294967296.0f);
 }
 
 float sqr(float x) {
@@ -84,6 +83,8 @@ int pixel_h, pixel_w;
 // ATTENTION: no light now
 // eye_ray == false represents photon_ray
 void trace(Ray ray, Vec v, bool eye_ray) {
+	const float offset_eps = 1e-3;
+
 	vector< Vec > colors(1, v);
 	vector< Ray > rays(1, ray);
 	vector< int > depths(1, 0);
@@ -100,6 +101,7 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 		Material material;
 		
 		int nearest_sphere = intersect(ray, x, n, color, material);
+
 		if (nearest_sphere == -1)
 			continue;
 
@@ -109,31 +111,34 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 		if (material == DIFF) {
 			if (eye_ray) {
 				points.push_back(HPoint(x, n, color.blend(colors[l]), pixel_h, pixel_w));
+//				if (200 < pixel_h && pixel_h < 300 && 200 < pixel_w && pixel_w < 300)
+//					fprintf(stderr, "%.2f %.2f %.2f      %.2f %.2f %.2f\n",x.x,x.y,x.z,n.x,n.y,n.z);
 			} else {
-				vector<HPoint>& points = grid->find_possible_near_points(x);
+				vector<HPoint*>& points = grid->find_possible_near_points(x);
+//				puts("====");
+//				printf("%d\n",points.size());
 				for (int i = 0; i < (points).size(); ++i) {
-					HPoint& point = points[i];
-					Vec v = point.x - x;
+					HPoint* point = points[i];
+					Vec v = point->x - x;
 //					fprintf(stderr, "ERRROR%.2f %.2f\n",v*v,point.r2);
-					if ((point.n*n>1e-3f) && (v*v <= point.r2)) {
-						float g = (point.cnt*ALPHA+ALPHA) / (point.cnt*ALPHA+1.0);
-						point.r2 *= g;
-						point.cnt ++;
-						point.flux = (point.flux + point.c.blend(colors[l])*(1.0/M_PI)) * g;
-//						fprintf(stderr,"ERRROROOR %.5f %.5f %.5f\n",point.flux.x,point.flux.y,point.flux.z);
-//						fprintf(stderr,"ERRROROOR %d %d\n",point.h,point.w);
+					if ((point->n*n>1e-3f) && (v*v <= point->r2)) {
+						float g = (1.0*point->cnt*ALPHA+ALPHA) / (1.0*point->cnt*ALPHA+1.0);
+//						printf("%d %d\n",point.h,point.w);
+						point->r2 *= g;
+						point->cnt ++;
+						point->flux = (point->flux + point->c.blend(colors[l])*(1.0/M_PI)) * g;
 					}
 				}
-				if (randf(0.0, 1.0) < max_color) {
-					float r1 = randf(0, 2.0 * M_PI);
-					float r2 = randf(0, 1.0);
+				if (randf() < max_color) {
+					float r1 = randf() * 2.0f * M_PI;
+					float r2 = randf();
 					float r2s = sqrt(r2);
 					Vec w = nl;
-					Vec u = (((abs(w.x) > 0.1) ? Vec(0, 1, 0) : Vec(1, 0, 0)) % w).normal();
+					Vec u = (((fabs(w.x) > 0.1) ? Vec(0, 1, 0) : Vec(1, 0, 0)) % w).normal();
 					Vec v = w % u;
 					Vec d = (u * cos(r1) * r2s + v * sin(r1) * r2s + w * sqrt(1 - r2)).normal();
 					colors.push_back(color.blend(colors[l])*(1.0/max_color));
-					rays.push_back(Ray(x, d));
+					rays.push_back(Ray(x + d * offset_eps, d));
 					depths.push_back(depths[l]+1);
 				}
 			}
@@ -142,11 +147,12 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 			Vec d = (n * (-ray.dir * n) * 2 + ray.dir).normal();
 //			return light + color.blend(tracing(Ray(x, d), depth + 1));
 			colors.push_back(color.blend(colors[l]));
-			rays.push_back(Ray(x, d));
+			rays.push_back(Ray(x + d * offset_eps, d));
 			depths.push_back(depths[l]+1);
 		} else {
 			// material == REFR
-			Ray reflect_ray = Ray(x, (n * (-ray.dir * n) * 2 + ray.dir).normal());
+			Vec reflect_dir = (n * (-ray.dir * n) * 2 + ray.dir).normal();
+			Ray reflect_ray = Ray(x + reflect_dir * offset_eps, reflect_dir);
 			bool go_into = true;
 			float air_speed = 1.0, solid_speed = 0.75;
 			float refract_rate = air_speed / solid_speed;
@@ -167,7 +173,8 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 				cos_value = sqrt(1 - sin_value * sin_value);
 				Vec u = -nl;
 				Vec v = (nl * (-ray.dir * nl) + ray.dir).normal();
-				Ray refract_ray = Ray(x, (u * cos_value + v * sin_value).normal());
+				Vec refract_dir = (u * cos_value + v * sin_value).normal();
+				Ray refract_ray = Ray(x + refract_dir * offset_eps, refract_dir);
 				float a = air_speed - solid_speed;
 				float b = air_speed + solid_speed;
 				float c = 1 - (go_into ? -(ray.dir * nl) : (refract_ray.dir * n));
@@ -183,7 +190,7 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 					rays.push_back(refract_ray);
 					depths.push_back(depths[l]+1);
 	 			} else {
-	 				if (randf(0, 1.0) < P) {
+	 				if (randf() < P) {
 						colors.push_back(color.blend(colors[l]));
 						rays.push_back(reflect_ray);
 						depths.push_back(depths[l]+1);
@@ -200,10 +207,13 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 
 void generate_photon(Ray& photon, Vec& light) {
 	light = Vec(2500,2500,2500) * M_PI * 4.0;
-	float p = randf(0.0, 2.0 * M_PI);
-	float t = 2.0 * acos(sqrt(randf(0.0, 1.0)));
+	float p = randf() * 2.0 * M_PI;
+	float t = 2.0 * acos(sqrt(randf()));
 	double st = sin(t);
-	photon = Ray(Vec(0, 25, 42.5), Vec(cos(p)*st, cos(t), sin(p)*st));
+//	photon = Ray(Vec(0, 25, 42.5), Vec(cos(p)*st, sin(p)*st, cos(t)));
+
+//	photon = Ray(Vec(49.0+randf(), 49.0+randf(), 50), Vec(0, sin(p)*st, cos(t)));
+	photon = Ray(Vec(48.0+randf()*2, 48.0+randf()*2, 49.5), Vec(-2, -1, -4).normal());
 }
 
 int main() {
@@ -226,7 +236,7 @@ int main() {
 	puts("");
 	grid = new Grid(points, HEIGHT, WIDTH);
 
-	int interval = 100000;
+	int interval = 10000;
 	time_t last_check_time=time(0);
 	for (int photon_number = 1; ; ++photon_number) {
 		Ray ray;

@@ -8,7 +8,8 @@
 #include <vector>
 
 class Grid {
-	std::vector<HPoint>* hash_table;
+	std::vector<HPoint> points;
+	std::vector<HPoint*>* hash_table;
 	Vec low, high, ssize;
 	float hash_s;
 	int hash_size;
@@ -17,7 +18,7 @@ class Grid {
 
 public:
 	Grid(std::vector<HPoint>& points, int h, int w);
-	std::vector<HPoint>& find_possible_near_points(Vec x);
+	std::vector<HPoint*>& find_possible_near_points(Vec x);
 	int to_int(float x);
 	void output_picture(int photon_number);
 };
