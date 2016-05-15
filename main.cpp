@@ -108,6 +108,38 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 		Vec nl = (n * ray.dir < 0) ? n : n * (-1);
 		float max_color = max(color.x,max(color.y,color.z));
 
+
+		// volumn light
+		if (eye_ray) {
+			if (depths[l] < 2) {
+				float absorb_rate = 0.8;
+				float dist = sqrt((ray.pos - x) * (ray.pos - x));
+				float interval = 2.0;
+				for (float i = interval; i < dist; i += interval) {
+					points.push_back(HPoint(ray.pos+(x-ray.pos)*((i-randf()*interval)/dist), n, color.blend(colors[l])*absorb_rate*(interval/dist),pixel_h,pixel_w));
+				}
+				colors[l] = colors[l] * (1.0 - absorb_rate);
+			}
+		} else {
+			float stop_probability = 0.4;
+			if (randf() < stop_probability) {
+				x = ray.pos+(x-ray.pos)*randf();
+				vector<HPoint*>& points = grid->find_possible_near_points(x);
+				for (int i = 0; i < (points).size(); ++i) {
+					HPoint* point = points[i];
+					Vec v = point->x - x;
+					if (v*v <= point->r2) {
+						float g = (1.0*point->cnt*ALPHA+ALPHA) / (1.0*point->cnt*ALPHA+1.0);
+						point->r2 *= g;
+						point->cnt ++;
+						point->flux = (point->flux + point->c.blend(colors[l])*(1.0/M_PI)) * g;
+					}
+				}
+				continue;
+			}
+		}
+
+
 		if (material == DIFF) {
 			if (eye_ray) {
 				points.push_back(HPoint(x, n, color.blend(colors[l]), pixel_h, pixel_w));
@@ -115,15 +147,11 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 //					fprintf(stderr, "%.2f %.2f %.2f      %.2f %.2f %.2f\n",x.x,x.y,x.z,n.x,n.y,n.z);
 			} else {
 				vector<HPoint*>& points = grid->find_possible_near_points(x);
-//				puts("====");
-//				printf("%d\n",points.size());
 				for (int i = 0; i < (points).size(); ++i) {
 					HPoint* point = points[i];
 					Vec v = point->x - x;
-//					fprintf(stderr, "ERRROR%.2f %.2f\n",v*v,point.r2);
 					if ((point->n*n>1e-3f) && (v*v <= point->r2)) {
 						float g = (1.0*point->cnt*ALPHA+ALPHA) / (1.0*point->cnt*ALPHA+1.0);
-//						printf("%d %d\n",point.h,point.w);
 						point->r2 *= g;
 						point->cnt ++;
 						point->flux = (point->flux + point->c.blend(colors[l])*(1.0/M_PI)) * g;
@@ -190,7 +218,7 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 					rays.push_back(refract_ray);
 					depths.push_back(depths[l]+1);
 	 			} else {
-	 				if (randf() < P) {
+	 				if (randf() < 0.5) {
 						colors.push_back(color.blend(colors[l]));
 						rays.push_back(reflect_ray);
 						depths.push_back(depths[l]+1);
@@ -206,14 +234,15 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 }
 
 void generate_photon(Ray& photon, Vec& light) {
-	light = Vec(2500,2500,2500) * M_PI * 4.0;
+	light = Vec(1.0,1.0,1.0) * 25000 * M_PI * 4.0;
 	float p = randf() * 2.0 * M_PI;
 	float t = 2.0 * acos(sqrt(randf()));
 	double st = sin(t);
 //	photon = Ray(Vec(0, 25, 42.5), Vec(cos(p)*st, sin(p)*st, cos(t)));
 
 //	photon = Ray(Vec(49.0+randf(), 49.0+randf(), 50), Vec(0, sin(p)*st, cos(t)));
-	photon = Ray(Vec(48.0+randf()*2, 48.0+randf()*2, 49.5), Vec(-2, -1, -4).normal());
+	photon = Ray(Vec(48.0+randf()*2, 48.0+randf()*2, 49.5), Vec(-3, -2, -4).normal());
+//	photon = Ray(Vec(49.5, 49.5, 49.5), Vec(-2+sin(p)*0.12*st, -1+cos(p)*0.12*st, -4).normal());
 }
 
 int main() {
@@ -239,6 +268,7 @@ int main() {
 	int interval = 10000;
 	time_t last_check_time=time(0);
 	for (int photon_number = 1; ; ++photon_number) {
+		fprintf(stderr,"\r%d",photon_number);
 		Ray ray;
 		Vec color;
 		generate_photon(ray, color);

@@ -129,17 +129,17 @@ void Model::load_from_obj(const char* file_name) {
 	triangles.push_back(Triangle(v010,v000,v110,Vec(0.75,0.75,0.75)));
 	triangles.push_back(Triangle(v110,v000,v100,Vec(0.75,0.75,0.75)));
 	// left
-	triangles.push_back(Triangle(v001,v000,v011,Vec(0.75,0.25,0.25)));
-	triangles.push_back(Triangle(v011,v000,v010,Vec(0.75,0.25,0.25)));
+	triangles.push_back(Triangle(v001,v000,v011,Vec(0.75,0.75,0.25)));
+	triangles.push_back(Triangle(v011,v000,v010,Vec(0.75,0.75,0.25)));
 	// right
-	triangles.push_back(Triangle(v101,v111,v100,Vec(0.25,0.25,0.75)));
-	triangles.push_back(Triangle(v111,v110,v100,Vec(0.25,0.25,0.75)));
+	triangles.push_back(Triangle(v101,v111,v100,Vec(0.25,0.75,0.75)));
+	triangles.push_back(Triangle(v111,v110,v100,Vec(0.25,0.75,0.75)));
 	// up
-	triangles.push_back(Triangle(v011,v111,v001,Vec(0.75,0.75,0.75)));
-	triangles.push_back(Triangle(v111,v101,v001,Vec(0.75,0.75,0.75)));
+	triangles.push_back(Triangle(v011,v111,v001,Vec(0.25,0.25,0.25)));
+	triangles.push_back(Triangle(v111,v101,v001,Vec(0.25,0.25,0.25)));
 	// back
-	triangles.push_back(Triangle(v011,v010,v111,Vec(0.75,0.75,0.75)));
-	triangles.push_back(Triangle(v111,v010,v110,Vec(0.75,0.75,0.75)));
+	triangles.push_back(Triangle(v011,v010,v111,Vec(0.50,0.50,0.50)));
+	triangles.push_back(Triangle(v111,v010,v110,Vec(0.50,0.50,0.50)));
 
 
 	t = new Node[triangles.size() * 4];
