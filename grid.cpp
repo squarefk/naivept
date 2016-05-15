@@ -1,5 +1,8 @@
 #include "grid.h"
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "tools/stb_image_write.h"
+
 #include <cmath>
 #include <string>
 #include <cstring>
@@ -7,15 +10,17 @@
 using namespace std;
 
 Grid::Grid(vector<HPoint>& _points, int h, int w) {
-	fprintf(stderr, "Start grid generation.\n");
-
 	// copy _points to the inside vector
 	for (int i = 0; i < _points.size(); ++i) {
+		if (i%(_points.size()/10000+1)==_points.size()%(_points.size()/10000+1))
+			fprintf(stderr, "\rGrid hash generating %.2f%%", 1.0*(i+1)/_points.size()*100.0*0.1);
 		points.push_back(_points[i]);
 	}
 
 	low = high = points[0].x;
 	for (int i = 0; i < points.size(); ++i) {
+		if (i%(points.size()/10000+1)==points.size()%(points.size()/10000+1))
+			fprintf(stderr, "\rGrid hash generating %.2f%%", 10.0+1.0*(i+1)/points.size()*100.0*0.1);
 		low.x=min(low.x,points[i].x.x);
 		low.y=min(low.y,points[i].x.y);
 		low.z=min(low.z,points[i].x.z);
@@ -33,6 +38,8 @@ Grid::Grid(vector<HPoint>& _points, int h, int w) {
 	hash_table = new vector<HPoint*>[hash_size];
 
 	for (int i = 0; i < points.size(); ++i) {
+		if (i%(points.size()/10000+1)==points.size()%(points.size()/10000+1))
+			fprintf(stderr, "\rGrid hash generating %.2f%%", 20.0+1.0*(i+1)/points.size()*100.0*0.8);
 		points[i].r2 = irad * irad;
 		points[i].cnt = 0;
 		points[i].flux = Vec();
@@ -42,7 +49,7 @@ Grid::Grid(vector<HPoint>& _points, int h, int w) {
 				for (int dz = 0; dz < 2; ++dz)
 					hash_table[hash_f(int(corner.x)+dx,int(corner.y)+dy,int(corner.z)+dz)].push_back(&points[i]);
 	}
-	fprintf(stderr, "Finish grid generation.\n");
+	fprintf(stderr, "\n");
 }
 
 unsigned int Grid::hash_f(int x,int y,int z) {
@@ -55,22 +62,31 @@ vector<HPoint*>& Grid::find_possible_near_points(Vec x) {
 	return hash_table[hash_f(int(x.x),int(x.y),int(x.z))];
 }
 
-int Grid::to_int(float x) {
-	return int(pow(1-exp(-x),1/2.2)*255+0.5);
+unsigned char Grid::to_unsigned_char(float x) {
+	return (unsigned char)(pow(1-exp(-x),1/2.2)*255+0.5);
 }
 
 void Grid::output_picture(int photon_number) {
 	// clear picture
-	for (int i = 0; i < HEIGHT; ++i)
-		for (int j = 0; j < WIDTH; ++j)
-			pic[i][j] = Vec();
+	memset(pic_float,0,sizeof(pic_float));
+	memset(pic_unsigned_char,0,sizeof(pic_unsigned_char));
+
 	// calc the whole picture
 	for (int i = 0; i < points.size(); ++i) {
 		const HPoint& point = points[i];
-		pic[point.h][point.w] = pic[point.h][point.w] + point.flux * (1.0 / (M_PI * point.r2 * photon_number));
+		pic_float[point.h][point.w][0] += point.flux.x * (1.0 / (M_PI * point.r2 * photon_number));
+		pic_float[point.h][point.w][1] += point.flux.y * (1.0 / (M_PI * point.r2 * photon_number));
+		pic_float[point.h][point.w][2] += point.flux.z * (1.0 / (M_PI * point.r2 * photon_number));
 	}
+	for (int i = 0; i < HEIGHT; ++i)
+		for (int j = 0; j < WIDTH; ++j)
+			for (int k = 0; k < 3; ++k)
+				pic_unsigned_char[i][j][k] = to_unsigned_char(pic_float[i][j][k]);
+
 	// output to the file
-	string file_name = string("output/image") + to_string(photon_number/10000) + string("w.ppm");
+	string file_name = string("output/image") + to_string(photon_number/10000) + string("w.png");
+	stbi_write_png(file_name.c_str(), WIDTH, HEIGHT, 3, pic_unsigned_char, WIDTH*3);
+	/*
 	FILE* file = fopen(file_name.c_str(), "w");
 	fprintf(file, "P3\n%d %d\n%d\n", WIDTH, HEIGHT, 255);
 	for (int h = 0; h < HEIGHT; ++h)
@@ -80,4 +96,5 @@ void Grid::output_picture(int photon_number) {
 			int b = to_int(pic[h][w].z);
 			fprintf(file, "%d %d %d ", r, g, b);
 		}
+	*/
 }

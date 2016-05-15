@@ -112,7 +112,7 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 		// volumn light
 		if (eye_ray) {
 			if (depths[l] < 2) {
-				float absorb_rate = 0.8;
+				float absorb_rate = 0.4;
 				float dist = sqrt((ray.pos - x) * (ray.pos - x));
 				float interval = 2.0;
 				for (float i = interval; i < dist; i += interval) {
@@ -268,14 +268,14 @@ int main() {
 	int interval = 10000;
 	time_t last_check_time=time(0);
 	for (int photon_number = 1; ; ++photon_number) {
-		fprintf(stderr,"\r%d",photon_number);
+		fprintf(stderr,"\rRecent photon number is %d",photon_number);
 		Ray ray;
 		Vec color;
 		generate_photon(ray, color);
 		trace(ray, color, false);
 		// output to screen
 		if (photon_number % 100000 == 0) {
-			printf("Photon number is %dw. The time cost is %lds\n", photon_number/10000, time(0)-last_check_time);
+			printf("\rPhoton number is %dw, the time cost is %lds\n", photon_number/10000, time(0)-last_check_time);
 			last_check_time = time(0);
 		}
 		// output picture

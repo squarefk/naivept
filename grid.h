@@ -14,12 +14,13 @@ class Grid {
 	float hash_s;
 	int hash_size;
 	unsigned int hash_f(int x,int y,int z);
-	Vec pic[HEIGHT][WIDTH];
+	float pic_float[HEIGHT][WIDTH][3];
+	unsigned char pic_unsigned_char[HEIGHT][WIDTH][3];
 
 public:
 	Grid(std::vector<HPoint>& points, int h, int w);
 	std::vector<HPoint*>& find_possible_near_points(Vec x);
-	int to_int(float x);
+	unsigned char to_unsigned_char(float x);
 	void output_picture(int photon_number);
 };
 
