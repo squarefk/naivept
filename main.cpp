@@ -218,7 +218,7 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 					rays.push_back(refract_ray);
 					depths.push_back(depths[l]+1);
 	 			} else {
-	 				if (randf() < 0.5) {
+	 				if (randf() < P) {
 						colors.push_back(color.blend(colors[l]));
 						rays.push_back(reflect_ray);
 						depths.push_back(depths[l]+1);
