@@ -70,15 +70,18 @@ void Model::load_from_obj(const char* file_name) {
 	vector<Vec> v;
 	vector<Vec> n;
 	vector<int> s, idx, idy, idz;
+	float base = 50.0;
 	while (fscanf(fp, "%s", buf) != EOF) {
 		if (buf[0] == '#') {
 			fgets(buf, sizeof(buf), fp);
 		} else if (buf[0] == 'v') {
 			float x, y, z;
 			fscanf(fp, "%f %f %f", &x, &y, &z);
-			x = x * 100 - 50;
-			y = y * 50;
-			z = z * 1 - 10;
+			float tx=x, ty=y, tz=z;
+			x = tx * 300 + 7.5;
+			y = -tz * 300 + 25;
+			z = ty * 300 - 60;
+			base = min(base, z);
 			v.push_back(Vec(x, y, z));
 			n.push_back(Vec());
 			s.push_back(0);
@@ -86,24 +89,29 @@ void Model::load_from_obj(const char* file_name) {
 			// buf[0] == 'f'
 			int x, y, z;
 			fscanf(fp, "%d %d %d", &x, &y, &z);
-			triangles.push_back(Triangle(v[x-1], v[y-1], v[z-1], Vec(0.9,0.9,0.9), REFR));
+			triangles.push_back(Triangle(v[x-1], v[y-1], v[z-1], Vec(0.9,0.9,0.9), DIFF));
 			idx.push_back(x);
 			idy.push_back(y);
 			idz.push_back(z);
+
+			/*
 			if (min(v[x-1].z,min(v[y-1].z,v[z-1].z)) < -50) continue;
 			Vec temp_n = ((v[x-1]-v[z-1]) % (v[y-1]-v[z-1])).normal();
 			n[x-1] = n[x-1] + temp_n; ++s[x-1];
 			n[y-1] = n[y-1] + temp_n; ++s[y-1];
 			n[z-1] = n[z-1] + temp_n; ++s[z-1];
+			*/
 		}
 	}
-
+	fprintf(stderr, "The base of model is %4f\n",base);
+	/*
 	for (int i = 0; i < triangles.size(); ++i) {
 		if (min(triangles[i].p.z,min(triangles[i].q.z,triangles[i].r.z)) < -50) continue;
 		triangles[i].np = (n[idx[i]-1] * (1.0 / s[idx[i]-1])).normal();
 		triangles[i].nq = (n[idy[i]-1] * (1.0 / s[idy[i]-1])).normal();
 		triangles[i].nr = (n[idz[i]-1] * (1.0 / s[idz[i]-1])).normal();
 	}
+	*/
 
 	fclose(fp);
 	fprintf(stderr, "Finish loading obj from %s\n", file_name);
@@ -112,7 +120,8 @@ void Model::load_from_obj(const char* file_name) {
 	// load walls
 	float x_wall_min = -50;
 	float x_wall_max = 50;
-	float y_wall_min = 0;
+//	float y_wall_min = 0;
+	float y_wall_min = -101;
 	float y_wall_max = 50;
 	float z_wall_min = -50;
 	float z_wall_max = 50;
@@ -129,17 +138,20 @@ void Model::load_from_obj(const char* file_name) {
 	triangles.push_back(Triangle(v010,v000,v110,Vec(0.75,0.75,0.75)));
 	triangles.push_back(Triangle(v110,v000,v100,Vec(0.75,0.75,0.75)));
 	// left
-	triangles.push_back(Triangle(v001,v000,v011,Vec(0.75,0.75,0.25)));
-	triangles.push_back(Triangle(v011,v000,v010,Vec(0.75,0.75,0.25)));
+	triangles.push_back(Triangle(v001,v000,v011,Vec(0.45,0.30,0.60)));
+	triangles.push_back(Triangle(v011,v000,v010,Vec(0.45,0.30,0.60)));
 	// right
 	triangles.push_back(Triangle(v101,v111,v100,Vec(0.25,0.75,0.75)));
 	triangles.push_back(Triangle(v111,v110,v100,Vec(0.25,0.75,0.75)));
 	// up
-	triangles.push_back(Triangle(v011,v111,v001,Vec(0.25,0.25,0.25)));
-	triangles.push_back(Triangle(v111,v101,v001,Vec(0.25,0.25,0.25)));
+	triangles.push_back(Triangle(v011,v111,v001,Vec(0.75,0.75,0.75)));
+	triangles.push_back(Triangle(v111,v101,v001,Vec(0.75,0.75,0.75)));
 	// back
 	triangles.push_back(Triangle(v011,v010,v111,Vec(0.50,0.50,0.50)));
 	triangles.push_back(Triangle(v111,v010,v110,Vec(0.50,0.50,0.50)));
+	// front
+	triangles.push_back(Triangle(v001,v101,v000,Vec(0.25,0.25,0.25)));
+	triangles.push_back(Triangle(v101,v100,v000,Vec(0.25,0.25,0.25)));
 
 
 	t = new Node[triangles.size() * 4];

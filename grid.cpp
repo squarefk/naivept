@@ -12,14 +12,14 @@ using namespace std;
 Grid::Grid(vector<HPoint>& _points, int h, int w) {
 	// copy _points to the inside vector
 	for (int i = 0; i < _points.size(); ++i) {
-		if (i%(_points.size()/10000+1)==_points.size()%(_points.size()/10000+1))
+		if ((i+1)%(_points.size()/10000)==_points.size()%(_points.size()/10000))
 			fprintf(stderr, "\rGrid hash generating %.2f%%", 1.0*(i+1)/_points.size()*100.0*0.1);
 		points.push_back(_points[i]);
 	}
 
 	low = high = points[0].x;
 	for (int i = 0; i < points.size(); ++i) {
-		if (i%(points.size()/10000+1)==points.size()%(points.size()/10000+1))
+		if ((i+1)%(points.size()/10000)==points.size()%(points.size()/10000))
 			fprintf(stderr, "\rGrid hash generating %.2f%%", 10.0+1.0*(i+1)/points.size()*100.0*0.1);
 		low.x=min(low.x,points[i].x.x);
 		low.y=min(low.y,points[i].x.y);
@@ -38,7 +38,7 @@ Grid::Grid(vector<HPoint>& _points, int h, int w) {
 	hash_table = new vector<HPoint*>[hash_size];
 
 	for (int i = 0; i < points.size(); ++i) {
-		if (i%(points.size()/10000+1)==points.size()%(points.size()/10000+1))
+		if ((i+1)%(points.size()/10000)==points.size()%(points.size()/10000))
 			fprintf(stderr, "\rGrid hash generating %.2f%%", 20.0+1.0*(i+1)/points.size()*100.0*0.8);
 		points[i].r2 = irad * irad;
 		points[i].cnt = 0;
@@ -85,16 +85,9 @@ void Grid::output_picture(int photon_number) {
 
 	// output to the file
 	string file_name = string("output/image") + to_string(photon_number/10000) + string("w.png");
-	stbi_write_png(file_name.c_str(), WIDTH, HEIGHT, 3, pic_unsigned_char, WIDTH*3);
-	/*
-	FILE* file = fopen(file_name.c_str(), "w");
-	fprintf(file, "P3\n%d %d\n%d\n", WIDTH, HEIGHT, 255);
-	for (int h = 0; h < HEIGHT; ++h)
-		for (int w = 0; w < WIDTH; ++w) {
-			int r = to_int(pic[h][w].x);
-			int g = to_int(pic[h][w].y);
-			int b = to_int(pic[h][w].z);
-			fprintf(file, "%d %d %d ", r, g, b);
-		}
-	*/
+	if (!stbi_write_png(file_name.c_str(), WIDTH, HEIGHT, 3, pic_unsigned_char, WIDTH*3)) {
+		fprintf(stderr, "Occur error when outputing to picture\n");
+	}
 }
+
+#undef STB_IMAGE_WRITE_IMPLEMENTATION

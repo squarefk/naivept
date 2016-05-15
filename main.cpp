@@ -5,6 +5,7 @@
 #include "sphere.h"
 #include "hpoint.h"
 #include "grid.h"
+#include "texture.h"
 
 #include <string>
 #include <cstdio>
@@ -16,7 +17,7 @@
 using namespace std;
 
 // color of light source must be Vec()
-int sphere_total = 1;
+int sphere_total = 0;
 Sphere spheres[] = {//Scene: radius, position, emission, color, material 
 	Sphere(15,Vec(-30, 20 ,-35),       Vec(),Vec(1,1,1)*.999, SPEC),//Mirr 
 
@@ -48,6 +49,7 @@ float sqr(float x) {
 
 // return -1 when no intersection
 // reture -2 when intersecting with model
+Texture texture("pictures/glass.png");
 int intersect(Ray ray, Vec& x, Vec& n, Vec& c, Material& m) {
 	float min_dist, temp_dist;
 	int nearest_sphere = -1;
@@ -72,6 +74,16 @@ int intersect(Ray ray, Vec& x, Vec& n, Vec& c, Material& m) {
 			n = model_n;
 			c = model_c;
 			m = model_m;
+
+			if (x.x > 50.0 - 1e-4 && x.y > 1e-4) {
+				float u = x.y/50.0;
+				float v = (x.z+50)/100.0;
+				if (0.05<u && u<0.95 && 0.05<v && v<0.95) {
+					c = texture.get_color(u,v);
+				} else
+					c = Vec(0.15,0.15,0.15);
+			}
+
 			return -2;
 		}
 	return nearest_sphere;
@@ -94,6 +106,8 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 			continue;
 
 		ray = rays[l];
+		if (eye_ray && depths[l]==0)
+			ray.pos = ray.pos + ray.dir * 100.0;
 
 		// information about the intersection
 		// without light
@@ -110,20 +124,32 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 
 
 		// volumn light
+		
+		float sigma = 0.05;
+		float dist = (x-ray.pos).length();
 		if (eye_ray) {
-			if (depths[l] < 2) {
-				float absorb_rate = 0.4;
-				float dist = sqrt((ray.pos - x) * (ray.pos - x));
-				float interval = 2.0;
-				for (float i = interval; i < dist; i += interval) {
-					points.push_back(HPoint(ray.pos+(x-ray.pos)*((i-randf()*interval)/dist), n, color.blend(colors[l])*absorb_rate*(interval/dist),pixel_h,pixel_w));
-				}
-				colors[l] = colors[l] * (1.0 - absorb_rate);
+			float stop_probability = 1.0 - exp(-dist*sigma);
+			float interval = 1.0;
+			float importance_sum = 0;
+			vector< pair<float,float> > samples;
+			for (float i = interval; i < dist; i += interval) {
+				float stop_dist = i - randf()*interval;
+				float importance = sigma * exp(-stop_dist*sigma);
+				importance_sum += importance;
+				samples.push_back(make_pair(stop_dist,importance));
 			}
+			for (int i = 0; i < samples.size(); ++i) {
+				float stop_dist = samples[i].first;
+				float importance = samples[i].second * stop_probability / importance_sum;
+				points.push_back(HPoint(ray.pos+ray.dir*stop_dist, n, color.blend(colors[l])*importance,pixel_h,pixel_w));
+				//points.push_back(HPoint(ray.pos+(x-ray.pos)*randf(), n, color.blend(colors[l])*stop_probability*(interval/dist),pixel_h,pixel_w));
+			}
+			colors[l] = colors[l] * (1.0 - stop_probability);
 		} else {
-			float stop_probability = 0.4;
-			if (randf() < stop_probability) {
-				x = ray.pos+(x-ray.pos)*randf();
+			float stop_dist = -log(1.0-randf()) / sigma;
+//			if (depths[l] == 0 && stop_dist < dist) {
+			if (stop_dist < dist) {
+				x = ray.pos + ray.dir * stop_dist;
 				vector<HPoint*>& points = grid->find_possible_near_points(x);
 				for (int i = 0; i < (points).size(); ++i) {
 					HPoint* point = points[i];
@@ -138,6 +164,8 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 				continue;
 			}
 		}
+		
+		
 
 
 		if (material == DIFF) {
@@ -234,19 +262,30 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 }
 
 void generate_photon(Ray& photon, Vec& light) {
-	light = Vec(1.0,1.0,1.0) * 25000 * M_PI * 4.0;
+	light = Vec(1.0,1.0,1.0) * 2500 * M_PI * 4.0;
 	float p = randf() * 2.0 * M_PI;
 	float t = 2.0 * acos(sqrt(randf()));
 	double st = sin(t);
-//	photon = Ray(Vec(0, 25, 42.5), Vec(cos(p)*st, sin(p)*st, cos(t)));
+//	photon = Ray(Vec(0, -25, 42.5), Vec(cos(p)*st, sin(p)*st, cos(t)));
 
 //	photon = Ray(Vec(49.0+randf(), 49.0+randf(), 50), Vec(0, sin(p)*st, cos(t)));
-	photon = Ray(Vec(48.0+randf()*2, 48.0+randf()*2, 49.5), Vec(-3, -2, -4).normal());
+//	photon = Ray(Vec(48.0+randf()*2, 48.0+randf()*2, 49.5), Vec(-3, -2, -4).normal());
 //	photon = Ray(Vec(49.5, 49.5, 49.5), Vec(-2+sin(p)*0.12*st, -1+cos(p)*0.12*st, -4).normal());
+
+	float a = randf()*M_PI/3.0;
+	float u = randf();
+	float v = 1.0-tan(a)/sqrt(3.0);
+	if (0.05<u && u<0.95 && 0.05<v && v<0.95) {
+		photon = Ray(Vec(49.9, u*50, v*100-50), Vec(-cos(a)+randf()*0.05-0.025,randf()*0.05-0.025,-sin(a)+randf()*0.05).normal());
+		light = texture.get_color(u,v) * 500000 * M_PI * 4.0 * v * v;
+	} else {
+		photon = Ray(Vec(randf()*100-50, randf()*50, randf()*100-50), Vec(cos(p)*st, sin(p)*st, cos(t)));
+		light = Vec(0.10,0.10,0.10) * 500000 * M_PI * 4.0;
+	}
 }
 
 int main() {
-	model.load_from_obj("models/water/water.obj");
+	model.load_from_obj("models/bunny.fine.obj");
 
 	Ray camera = Ray(Vec(0, -100, 0), Vec(0, 1, 0));
 

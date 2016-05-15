@@ -1,5 +1,5 @@
-main: main.o vec.o model.o triangle.o ray.o sphere.o hpoint.o grid.o
-	g++ -O2 main.o vec.o model.o triangle.o ray.o sphere.o hpoint.o grid.o -o main
+main: main.o vec.o model.o triangle.o ray.o sphere.o hpoint.o grid.o texture.o
+	g++ -O2 main.o vec.o model.o triangle.o ray.o sphere.o hpoint.o grid.o texture.o -o main
 
 main.o: main.cpp
 	g++ -O2 -c main.cpp
@@ -24,6 +24,9 @@ hpoint.o: hpoint.cpp
 
 grid.o: grid.cpp
 	g++ -O2 -c grid.cpp
+
+texture.o: texture.cpp
+	g++ -O2 -c texture.cpp
 
 clean:
 	rm *.o
