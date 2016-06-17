@@ -17,10 +17,10 @@
 using namespace std;
 
 // color of light source must be Vec()
-int sphere_total = 0;
+int sphere_total = 1;
 Sphere spheres[] = {//Scene: radius, position, emission, color, material 
-	Sphere(20,Vec(27.5, 25 ,-30),       Vec(),Vec(1,1,1)*.99, REFR),//Mirr 
-	Sphere(5,   Vec(0, 25, 42.5),  Vec(1,1,1)*50,   Vec(),           DIFF),//light 
+	Sphere(12,  Vec(-33, 23 ,-38),      Vec(),Vec(1,1,1)*.99, SPEC),//Mirr 
+	Sphere(5,   Vec(0, 25, 42.5),      Vec(1,1,1)*50, Vec(), DIFF),//light 
 
 	Sphere(1e5, Vec( 1e5+1,40.8,81.6), Vec(),Vec(.75,.25,.25),DIFF),//Left 
 	Sphere(1e5, Vec(-1e5+99,40.8,81.6),Vec(),Vec(.25,.25,.75),DIFF),//Rght 
@@ -279,13 +279,14 @@ void generate_photon(Ray& photon, Vec& light) {
 //	light = texture.get_color(u,v) * 500000 * M_PI * 4.0 * v * v;
 
 //	photon = Ray(Vec(0, randf()*10+20, randf()*10+45), Vec(cos(p)*st, sin(p)*st, cos(t)));
-	photon = Ray(Vec(randf()*20-10, randf()*20+30, 49.9), Vec(cos(p)*st, sin(p)*st, cos(t)));
+	photon = Ray(Vec(randf()*20-10, randf()*10+15, 49.9), Vec(cos(p)*st, sin(p)*st, cos(t)));
 //	photon = Ray(Vec(randf()*100-50, randf()*50, randf()*100-50), Vec(cos(p)*st, sin(p)*st, cos(t)));
 	light = Vec(1.0,1.0,1.0) * 2500 * M_PI * 4.0;
 }
 
 int main() {
-	model.load_from_obj("models/bunny.fine.obj");
+//	model.load_from_obj("models/bunny.fine.obj");
+	model.load_from_obj("models/water/water.obj");
 
 	Ray camera = Ray(Vec(0, -100, 0), Vec(0, 1, 0));
 
