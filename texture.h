@@ -14,7 +14,7 @@ class Texture {
 	unsigned char* data;
 public:
 	Texture(std::string file_name);
-	Vec get_color(float u, float v);
+	Vec get_color(real u, real v);
 };
 
 #endif

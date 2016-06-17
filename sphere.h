@@ -5,10 +5,10 @@
 #include "constants.h"
 
 struct Sphere {
-	float radius;
+	real radius;
 	Vec pos, light, color;
 	Material material;
-	Sphere(float _r, Vec _p, Vec _l, Vec _c, Material _m);
+	Sphere(real _r, Vec _p, Vec _l, Vec _c, Material _m);
 };
 
 

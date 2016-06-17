@@ -1,5 +1,6 @@
 main: main.o vec.o model.o triangle.o ray.o sphere.o hpoint.o grid.o texture.o
 	g++ -O2 main.o vec.o model.o triangle.o ray.o sphere.o hpoint.o grid.o texture.o -o main
+	rm *.o
 
 main.o: main.cpp
 	g++ -O2 -c main.cpp

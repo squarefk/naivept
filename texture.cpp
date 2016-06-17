@@ -25,13 +25,13 @@ Texture::Texture(string file_name) {
 	}
 }
 
-Vec Texture::get_color(float u, float v) {
+Vec Texture::get_color(real u, real v) {
 	int w = int(u * (width-1));
 	int h = int(v * (height-1));
 
-	float r = float(data[(h + w * height) * channels])/255.0;
-	float g = float(data[(h + w * height) * channels+1])/255.0;
-	float b = float(data[(h + w * height) * channels+2])/255.0;
+	real r = real(data[(h * width + w) * channels])/255.0;
+	real g = real(data[(h * width + w) * channels+1])/255.0;
+	real b = real(data[(h * width + w) * channels+2])/255.0;
 
 	return Vec(r,g,b);
 }

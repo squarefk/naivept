@@ -1,18 +1,20 @@
 #ifndef VEC_H
 #define VEC_H
 
+#include "constants.h"
+
 class Vec {
 public:
-	float x, y, z;
-	Vec(float _x = 0.0, float _y = 0.0, float _z = 0.0);
-	float length() const;
+	real x, y, z;
+	Vec(real _x = 0.0, real _y = 0.0, real _z = 0.0);
+	real length() const;
 	Vec normal() const;
 	Vec blend(const Vec& rhs) const;
 	Vec operator + (const Vec& rhs) const;
 	Vec operator - () const;
 	Vec operator - (const Vec& rhs) const;
-	float operator * (const Vec& rhs) const;
-	Vec operator * (const float rhs) const;
+	real operator * (const Vec& rhs) const;
+	Vec operator * (const real rhs) const;
 	Vec operator % (const Vec& rhs) const;
 };
 

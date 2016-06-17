@@ -14,7 +14,6 @@ HPoint::HPoint(const HPoint& p) {
 	c = p.c;
 	h = p.h;
 	w = p.w;
-	r2 = p.r2;
 	cnt = p.cnt;
 	flux = p.flux;
 }

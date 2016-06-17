@@ -22,7 +22,7 @@ class Model {
 public:
 	void load_from_obj(const char* file_name);
 
-	bool intersect(const Ray& ray, float& dist, Vec& n, Vec& c, Material& m);
+	bool intersect(const Ray& ray, real& dist, Vec& n, Vec& c, Material& m);
 	void build(int k, int l, int r);
 };
 

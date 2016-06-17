@@ -9,8 +9,6 @@ public:
 	int h, w;
 	// get from eye ray
 	Vec x, n, c;
-	// calc in the photon rays
-	float r2;
 	unsigned int cnt;
 	Vec flux;
 
