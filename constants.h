@@ -3,7 +3,7 @@
 
 typedef double real;
 
-enum Material{DIFF, SPEC, REFR};
+enum Material{DIFF, SPEC, REFR, CERA};
 
 const int HEIGHT = 512;
 const int WIDTH = 512;

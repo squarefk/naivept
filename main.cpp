@@ -85,7 +85,7 @@ real global_r2;
 // ATTENTION: no light now
 // eye_ray == false represents photon_ray
 void trace(Ray ray, Vec v, bool eye_ray) {
-	const real offset_eps = 0;
+	const real offset_eps = 1e-4;
 
 	vector< Vec > colors(1, v);
 	vector< Ray > rays(1, ray);
@@ -172,8 +172,17 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 //			fprintf(stderr,"\n%.5f %.5f %.5f %d       %.5f %.5f %.5f  (%d)\n",x.x,x.y,x.z,material,colors[l].x,colors[l].y,colors[l].z,pixel_w);
 //		if (eye_ray && pixel_h==414 && pixel_w==288 && depths[l]>1)
 //			continue;
+		if (material == CERA && eye_ray) {
+			real prop = 0.5;
+			points.push_back(HPoint(x, n, color.blend(colors[l]) * prop, pixel_h, pixel_w));
 
-		if (material == DIFF) {
+			Vec d = (n * (-ray.dir * n) * 2 + ray.dir).normal();
+//			return light + color.blend(tracing(Ray(x, d), depth + 1));
+			colors.push_back(color.blend(colors[l]) * (1 - prop));
+			rays.push_back(Ray(x + nl * offset_eps, d));
+			depths.push_back(depths[l]+1);
+		} else
+		if (material == DIFF || material == CERA) {
 			if (eye_ray) {
 				points.push_back(HPoint(x, n, color.blend(colors[l]), pixel_h, pixel_w));
 			} else {
@@ -210,8 +219,7 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 		} else
 		if (material == REFR) {
 			Vec reflect_dir = (ray.dir - n * 2 * (ray.dir * n)).normal();
-//			Ray reflect_ray = Ray(x + nl * offset_eps, reflect_dir);
-			Ray reflect_ray = Ray(x + nl * 1e-4, reflect_dir);
+			Ray reflect_ray = Ray(x + nl * offset_eps, reflect_dir);
 
 			bool into = (n * nl > 0);
 			real nc=1.0, nt=1.5, nnt=into?nc/nt:nt/nc, ddn=ray.dir*nl;
@@ -224,8 +232,7 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 				depths.push_back(depths[l]+1);
 			} else {
 				Vec refract_dir = (ray.dir*nnt-n*((into?1:-1)*(ddn*nnt+sqrt(cos2t)))).normal();
-//				Ray refract_ray = Ray(x - nl * offset_eps, refract_dir);
-				Ray refract_ray = Ray(x - nl * 1e-4, refract_dir);
+				Ray refract_ray = Ray(x - nl * offset_eps, refract_dir);
 
 				real a=nt-nc, b=nt+nc, c=1-(into?-ddn:refract_dir*n);
 				real R0=a*a/(b*b), Re=R0+(1-R0)*c*c*c*c*c, P = Re;
@@ -271,9 +278,10 @@ void generate_photon(Ray& photon, Vec& light) {
 //	photon = Ray(Vec(49.9, u*50, v*100-50), Vec(-cos(a)+randf()*0.05-0.025,randf()*0.05-0.025,-sin(a)+randf()*0.05).normal());
 //	light = texture.get_color(u,v) * 500000 * M_PI * 4.0 * v * v;
 
-	photon = Ray(Vec(0, 25, 45), Vec(cos(p)*st, sin(p)*st, cos(t)));
+//	photon = Ray(Vec(0, randf()*10+20, randf()*10+45), Vec(cos(p)*st, sin(p)*st, cos(t)));
+	photon = Ray(Vec(randf()*20-10, randf()*20+30, 49.9), Vec(cos(p)*st, sin(p)*st, cos(t)));
 //	photon = Ray(Vec(randf()*100-50, randf()*50, randf()*100-50), Vec(cos(p)*st, sin(p)*st, cos(t)));
-	light = Vec(1.0,1.0,1.0) * 25000 * M_PI * 4.0;
+	light = Vec(1.0,1.0,1.0) * 2500 * M_PI * 4.0;
 }
 
 int main() {

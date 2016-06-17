@@ -73,7 +73,7 @@ void Model::load_from_obj(const char* file_name) {
 
 	char buf[256];
 	int lineNumber = 0;
-	vector<Vec> v;
+	vector<Vec> v, vv;
 	vector<Vec> n;
 	vector<int> idx, idy, idz;
 	real base = 50.0;
@@ -81,7 +81,7 @@ void Model::load_from_obj(const char* file_name) {
 		if (buf[0] == '#') {
 			fgets(buf, sizeof(buf), fp);
 		} else if (buf[0] == 'v') {
-			real x, y, z;
+			real x, y, z, xx, yy, zz;
 			fscanf(fp, "%lf %lf %lf", &x, &y, &z);
 			real tx=x, ty=y, tz=z;
 			// sphere
@@ -93,12 +93,17 @@ void Model::load_from_obj(const char* file_name) {
 			y = -tz * 20 - 10;
 			z = ty * 20 - 10;
 			// rabbit
-			x = tx * 300;
-			y = -tz * 300 + 25;
-			z = ty * 300 - 60;
+			x = tx * 360 + 20;
+			y = -tz * 360 + 45;
+			z = ty * 360 - 62;
+
+			xx = tx * 200 - 25;
+			yy = -tz * 200 + 25;
+			zz = ty * 200 - 56.66;
 
 			base = min(base, z);
 			v.push_back(Vec(x, y, z));
+			vv.push_back(Vec(xx, yy, zz));
 			n.push_back(Vec());
 
 		} else {
@@ -106,7 +111,7 @@ void Model::load_from_obj(const char* file_name) {
 			int x, y, z;
 			fscanf(fp, "%d %d %d", &x, &y, &z);
 
-			triangles.push_back(Triangle(v[x-1], v[y-1], v[z-1], Vec(0.8, 0.8, 0.8), REFR));
+			triangles.push_back(Triangle(v[x-1], v[y-1], v[z-1], Vec(0.80,0.50,0.60), CERA));
 			idx.push_back(x);
 			idy.push_back(y);
 			idz.push_back(z);
@@ -114,6 +119,12 @@ void Model::load_from_obj(const char* file_name) {
 			n[x-1] = n[x-1] + temp_n;
 			n[y-1] = n[y-1] + temp_n;
 			n[z-1] = n[z-1] + temp_n;
+
+			triangles.push_back(Triangle(vv[x-1], vv[y-1], vv[z-1], Vec(0.25,0.50,0.75), CERA));
+			idx.push_back(x);
+			idy.push_back(y);
+			idz.push_back(z);
+
 		}
 	}
 	fprintf(stderr, "The base of model is %4f\n",base);
@@ -151,13 +162,12 @@ void Model::load_from_obj(const char* file_name) {
 	triangles.push_back(Triangle(v010,v000,v110,Vec(0.75,0.75,0.75)));
 	triangles.push_back(Triangle(v110,v000,v100,Vec(0.75,0.75,0.75)));
 
-/*
 	// left
-	triangles.push_back(Triangle(v001,v000,v011,Vec(0.45,0.30,0.60)));
-	triangles.push_back(Triangle(v011,v000,v010,Vec(0.45,0.30,0.60)));
+	triangles.push_back(Triangle(v001,v000,v011,Vec(0.10,0.10,0.90), SPEC));
+	triangles.push_back(Triangle(v011,v000,v010,Vec(0.10,0.10,0.90), SPEC));
 	// right
-	triangles.push_back(Triangle(v101,v111,v100,Vec(0.25,0.75,0.75)));
-	triangles.push_back(Triangle(v111,v110,v100,Vec(0.25,0.75,0.75)));
+	triangles.push_back(Triangle(v101,v111,v100,Vec(0.50,0.50,0.25)));
+	triangles.push_back(Triangle(v111,v110,v100,Vec(0.50,0.50,0.25)));
 	// up
 	triangles.push_back(Triangle(v011,v111,v001,Vec(0.75,0.75,0.75)));
 	triangles.push_back(Triangle(v111,v101,v001,Vec(0.75,0.75,0.75)));
@@ -168,7 +178,7 @@ void Model::load_from_obj(const char* file_name) {
 	// front
 	triangles.push_back(Triangle(v001,v101,v000,Vec(0.25,0.25,0.25)));
 	triangles.push_back(Triangle(v101,v100,v000,Vec(0.25,0.25,0.25)));
-*/
+
 
 	t = new Node[triangles.size() * 4];
 	queue = new int[triangles.size() * 4];
