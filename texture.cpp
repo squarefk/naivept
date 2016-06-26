@@ -26,6 +26,10 @@ Texture::Texture(string file_name) {
 }
 
 Vec Texture::get_color(real u, real v) {
+	if (u<0 || u>1 || v<0 || v>1) {
+		printf("Error uv address : %.2f %.2f\n",u,v);
+		return Vec(0,0,0);
+	}
 	int w = int(u * (width-1));
 	int h = int(v * (height-1));
 

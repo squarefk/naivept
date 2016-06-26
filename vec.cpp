@@ -9,7 +9,7 @@ Vec::Vec(real _x, real _y, real _z) {
 }
 
 real Vec::length() const {
-		return sqrt(x * x + y * y + z * z);
+	return sqrt(x * x + y * y + z * z);
 }
 
 Vec Vec::normal() const {

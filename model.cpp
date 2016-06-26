@@ -100,17 +100,21 @@ void Model::load_from_obj(const char* file_name) {
 			x = tx * 100 - 50;
 			y = ty * 50;
 			z = tz * 2 - 15;
+			// angel
+			real theta=M_PI*3/4;
+			x = -(tx*sin(theta)+tz*cos(theta))*0.25;
+			y = (tx*cos(theta)-tz*sin(theta))*0.25+25;
+			z = ty*0.25-50;
 
 			base = min(base, z);
 			v.push_back(Vec(x, y, z));
 			n.push_back(Vec());
 
-		} else {
-			// buf[0] == 'f'
+		} else if (buf[0] == 'f') {
 			int x, y, z;
 			fscanf(fp, "%d %d %d", &x, &y, &z);
 
-			triangles.push_back(Triangle(v[x-1], v[y-1], v[z-1], Vec(0.99,0.99,0.99), REFR));
+			triangles.push_back(Triangle(v[x-1], v[y-1], v[z-1], Vec(0.53,0.71,0.71), CERA));
 			idx.push_back(x);
 			idy.push_back(y);
 			idz.push_back(z);
@@ -156,11 +160,11 @@ void Model::load_from_obj(const char* file_name) {
 	triangles.push_back(Triangle(v110,v000,v100,Vec(0.75,0.75,0.75)));
 
 	// left
-	triangles.push_back(Triangle(v001,v000,v011,Vec(0.10,0.10,0.90)));
-	triangles.push_back(Triangle(v011,v000,v010,Vec(0.10,0.10,0.90)));
+	triangles.push_back(Triangle(v001,v000,v011,Vec(0.50,0.25,0.15)));
+	triangles.push_back(Triangle(v011,v000,v010,Vec(0.50,0.25,0.15)));
 	// right
-	triangles.push_back(Triangle(v101,v111,v100,Vec(0.50,0.50,0.25)));
-	triangles.push_back(Triangle(v111,v110,v100,Vec(0.50,0.50,0.25)));
+	triangles.push_back(Triangle(v101,v111,v100,Vec(0.99,0.99,0.99)));
+	triangles.push_back(Triangle(v111,v110,v100,Vec(0.99,0.99,0.99)));
 	// up
 	triangles.push_back(Triangle(v011,v111,v001,Vec(0.75,0.75,0.75)));
 	triangles.push_back(Triangle(v111,v101,v001,Vec(0.75,0.75,0.75)));

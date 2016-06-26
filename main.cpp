@@ -17,7 +17,7 @@
 using namespace std;
 
 // color of light source must be Vec()
-int sphere_total = 1;
+int sphere_total = 0;
 Sphere spheres[] = {//Scene: radius, position, emission, color, material 
 	Sphere(12,  Vec(-33, 23 ,-38),      Vec(),Vec(1,1,1)*.99, SPEC),//Mirr 
 	Sphere(5,   Vec(0, 25, 42.5),      Vec(1,1,1)*50, Vec(), DIFF),//light 
@@ -73,6 +73,8 @@ int intersect(Ray ray, Vec& x, Vec& n, Vec& c, Material& m) {
 			n = model_n;
 			c = model_c;
 			m = model_m;
+			if (x.x>49.9 && 0<x.y && x.y<50 && -50<x.z && x.z<50)
+				c=texture.get_color(x.y/50,(x.z+50)/100);
 			return -2;
 		}
 	return nearest_sphere;
@@ -96,8 +98,8 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 			continue;
 
 		ray = rays[l];
-//		if (eye_ray && depths[l]==0)
-//			ray.pos = ray.pos + ray.dir * 100.0;
+		if (eye_ray && depths[l]==0)
+			ray.pos = ray.pos + ray.dir * ((0-ray.pos.y)/ray.dir.y/2);
 
 		// information about the intersection
 		// without light
@@ -114,12 +116,13 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 		real max_color = max(color.x,max(color.y,color.z));
 
 		// volumn light
-		/*
-		real sigma = 0.05;
+		
+		real sigma = 0.033;
 		real dist = (x-ray.pos).length();
 		if (eye_ray) {
 			real stop_probability = 1.0 - exp(-dist*sigma);
-			real interval = 1.0;
+//			printf("%.5f\n",stop_probability);
+			real interval = 4.0;
 			real importance_sum = 0;
 			vector< pair<real,real> > samples;
 			for (real i = interval; i < dist; i += interval) {
@@ -131,7 +134,10 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 			for (int i = 0; i < samples.size(); ++i) {
 				real stop_dist = samples[i].first;
 				real importance = samples[i].second * stop_probability / importance_sum;
-				points.push_back(HPoint(ray.pos+ray.dir*stop_dist, n, color.blend(colors[l])*importance,pixel_h,pixel_w));
+
+				//!!!!!!bugbugbugbug
+
+				points.push_back(HPoint(ray.pos+ray.dir*stop_dist, n, colors[l]*importance,pixel_h,pixel_w));
 				//points.push_back(HPoint(ray.pos+(x-ray.pos)*randf(), n, color.blend(colors[l])*stop_probability*(interval/dist),pixel_h,pixel_w));
 			}
 			colors[l] = colors[l] * (1.0 - stop_probability);
@@ -151,7 +157,7 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 					}
 				}
 				// multiple scattering
-				real absorption = 0.5;
+				real absorption = 0.7;
 				if (randf() < 1.0 - absorption) {
 					real p = randf() * 2.0 * M_PI;
 					real t = 2.0 * acos(sqrt(randf()));
@@ -163,15 +169,8 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 				continue;
 			}
 		}
-		*/
 		
-//		fprintf(stderr, "%d  %.2f %.2f %.2f      %.2f %.2f %.2f      %.2f %.2f %.2f\n",depths[l], x.x,x.y,x.z,ray.pos.x,ray.pos.y,ray.pos.z,ray.dir.x,ray.dir.y,ray.dir.z);
-//		if (eye_ray && pixel_h==414 && pixel_w==288)
-//			fprintf(stderr,"\n%.5f %.5f %.5f %d       %.5f %.5f %.5f  (%d)\n",x.x,x.y,x.z,material,colors[l].x,colors[l].y,colors[l].z,pixel_w);
-//		if (eye_ray && pixel_h==414 && pixel_w==289)
-//			fprintf(stderr,"\n%.5f %.5f %.5f %d       %.5f %.5f %.5f  (%d)\n",x.x,x.y,x.z,material,colors[l].x,colors[l].y,colors[l].z,pixel_w);
-//		if (eye_ray && pixel_h==414 && pixel_w==288 && depths[l]>1)
-//			continue;
+		
 		if (material == CERA && eye_ray) {
 			real prop = 0.5;
 			points.push_back(HPoint(x, n, color.blend(colors[l]) * prop, pixel_h, pixel_w));
@@ -273,20 +272,22 @@ void generate_photon(Ray& photon, Vec& light) {
 //	photon = Ray(Vec(49.5, 49.5, 49.5), Vec(-2+sin(p)*0.12*st, -1+cos(p)*0.12*st, -4).normal());
 
 	real a = randf()*M_PI/3.0;
-	real u = randf();
+	real b = randf()*M_PI/3.0-M_PI/6.0;
+	real u = tan(b)*sqrt(3.0)/2.0+0.5;
 	real v = 1.0-tan(a)/sqrt(3.0);
-//	photon = Ray(Vec(49.9, u*50, v*100-50), Vec(-cos(a)+randf()*0.05-0.025,randf()*0.05-0.025,-sin(a)+randf()*0.05).normal());
-//	light = texture.get_color(u,v) * 500000 * M_PI * 4.0 * v * v;
 
-//	photon = Ray(Vec(0, randf()*10+20, randf()*10+45), Vec(cos(p)*st, sin(p)*st, cos(t)));
-	photon = Ray(Vec(randf()*20-10, randf()*10+15, 49.9), Vec(cos(p)*st, sin(p)*st, cos(t)));
-//	photon = Ray(Vec(randf()*100-50, randf()*50, randf()*100-50), Vec(cos(p)*st, sin(p)*st, cos(t)));
-	light = Vec(1.0,1.0,1.0) * 2500 * M_PI * 4.0;
+	// window
+	photon = Ray(Vec(49.99, u*50, v*100-50), Vec(-cos(a)+randf()*0.05-0.025,tan(b)*sqrt(3.0)*0.25+randf()*0.05-0.025,-sin(a)+randf()*0.05).normal());
+	light = texture.get_color(u,v) * 1000000 * M_PI * 4.0 * v * v;
+
+	// Rectangular lamp
+	// photon = Ray(Vec(randf()*20-10, randf()*10+15, 49.9), Vec(cos(p)*st, sin(p)*st, cos(t)));
+	// light = Vec(1.0,1.0,1.0) * 2500 * M_PI * 4.0;
 }
 
 int main() {
 //	model.load_from_obj("models/bunny.fine.obj");
-	model.load_from_obj("models/water/water.obj");
+	model.load_from_obj("models/angel.obj");
 
 	Ray camera = Ray(Vec(0, -100, 0), Vec(0, 1, 0));
 
