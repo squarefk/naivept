@@ -4,6 +4,7 @@
 #include "ray.h"
 #include "triangle.h"
 #include <cmath>
+#include <cstdlib>
 #include <algorithm>
 using namespace std;
 
@@ -69,11 +70,15 @@ real randfa() {
 
 void Model::load_from_obj(const char* file_name) {
 	FILE* fp =fopen(file_name, "r");
+	if (fp == NULL) {
+		fprintf(stderr, "No object file found.\n");
+		exit(-1);
+	}
 	fprintf(stderr, "Start loading obj from %s\n", file_name);
 
-	char buf[256];
+	char buf[25600];
 	int lineNumber = 0;
-	vector<Vec> v;
+	vector<Vec> v, vv, vvv;
 	vector<Vec> n;
 	vector<int> idx, idy, idz;
 	real base = 50.0;
@@ -81,7 +86,7 @@ void Model::load_from_obj(const char* file_name) {
 		if (buf[0] == '#') {
 			fgets(buf, sizeof(buf), fp);
 		} else if (buf[0] == 'v') {
-			real x, y, z;
+			real x, y, z, xx, yy, zz, xxx, yyy, zzz;
 			fscanf(fp, "%lf %lf %lf", &x, &y, &z);
 			real tx=x, ty=y, tz=z;
 			// sphere
@@ -92,10 +97,6 @@ void Model::load_from_obj(const char* file_name) {
 			x = tx * 20 - 10;
 			y = -tz * 20 - 10;
 			z = ty * 20 - 10;
-			// rabbit
-			x = tx * 360 + 20;
-			y = -tz * 360 + 45;
-			z = ty * 360 - 62;
 			// water
 			x = tx * 100 - 50;
 			y = ty * 50;
@@ -105,19 +106,43 @@ void Model::load_from_obj(const char* file_name) {
 			x = -(tx*sin(theta)+tz*cos(theta))*0.25;
 			y = (tx*cos(theta)-tz*sin(theta))*0.25+25;
 			z = ty*0.25-50;
+			// dragon
+			double scale = 30;
+			x = tx * scale - 10;
+			y = -tz * scale - 10;
+			z = ty * scale + 21.14868;
+			xx = tx * scale + 10;
+			yy = -tz * scale + 10;
+			zz = ty * scale + 21.14868;
+			xxx = tx * scale + 30;
+			yyy = -tz * scale + 30;
+			zzz = ty * scale + 21.14868;
 
 			base = min(base, z);
 			v.push_back(Vec(x, y, z));
+			vv.push_back(Vec(xx, yy, zz));
+			vvv.push_back(Vec(xxx, yyy, zzz));
 			n.push_back(Vec());
 
 		} else if (buf[0] == 'f') {
 			int x, y, z;
 			fscanf(fp, "%d %d %d", &x, &y, &z);
 
-			triangles.push_back(Triangle(v[x-1], v[y-1], v[z-1], Vec(0.53,0.71,0.71), CERA));
+			triangles.push_back(Triangle(v[x-1], v[y-1], v[z-1], Vec(0.9,0.1,0.1), CERA));
 			idx.push_back(x);
 			idy.push_back(y);
 			idz.push_back(z);
+
+			triangles.push_back(Triangle(vv[x-1], vv[y-1], vv[z-1], Vec(0.1,0.9,0.1), CERA));
+			idx.push_back(x);
+			idy.push_back(y);
+			idz.push_back(z);
+
+			triangles.push_back(Triangle(vvv[x-1], vvv[y-1], vvv[z-1], Vec(0.1,0.1,0.9), CERA));
+			idx.push_back(x);
+			idy.push_back(y);
+			idz.push_back(z);
+
 			Vec temp_n = ((v[x-1]-v[z-1]) % (v[y-1]-v[z-1])).normal();
 			n[x-1] = n[x-1] + temp_n;
 			n[y-1] = n[y-1] + temp_n;
@@ -139,11 +164,11 @@ void Model::load_from_obj(const char* file_name) {
 
 
 	// load walls
-	real x_wall_min = -50;
-	real x_wall_max = 50;
-	real y_wall_min = -101;
-	real y_wall_max = 50;
-	real z_wall_min = -50;
+	real x_wall_min = -1000;
+	real x_wall_max = 1000;
+	real y_wall_min = -1000;
+	real y_wall_max = 1000;
+	real z_wall_min = 0;
 	real z_wall_max = 50;
 
 	Vec v000(x_wall_min,y_wall_min,z_wall_min);
@@ -160,21 +185,21 @@ void Model::load_from_obj(const char* file_name) {
 	triangles.push_back(Triangle(v110,v000,v100,Vec(0.75,0.75,0.75)));
 
 	// left
-	triangles.push_back(Triangle(v001,v000,v011,Vec(0.50,0.25,0.15)));
-	triangles.push_back(Triangle(v011,v000,v010,Vec(0.50,0.25,0.15)));
+	// triangles.push_back(Triangle(v001,v000,v011,Vec(0.50,0.25,0.15)));
+	// triangles.push_back(Triangle(v011,v000,v010,Vec(0.50,0.25,0.15)));
 	// right
-	triangles.push_back(Triangle(v101,v111,v100,Vec(0.99,0.99,0.99)));
-	triangles.push_back(Triangle(v111,v110,v100,Vec(0.99,0.99,0.99)));
+	// triangles.push_back(Triangle(v101,v111,v100,Vec(0.99,0.99,0.99)));
+	// triangles.push_back(Triangle(v111,v110,v100,Vec(0.99,0.99,0.99)));
 	// up
-	triangles.push_back(Triangle(v011,v111,v001,Vec(0.75,0.75,0.75)));
-	triangles.push_back(Triangle(v111,v101,v001,Vec(0.75,0.75,0.75)));
+	// triangles.push_back(Triangle(v011,v111,v001,Vec(0.75,0.75,0.75)));
+	// triangles.push_back(Triangle(v111,v101,v001,Vec(0.75,0.75,0.75)));
 	// back
-	triangles.push_back(Triangle(v011,v010,v111,Vec(0.75,0.75,0.75)));
-	triangles.push_back(Triangle(v111,v010,v110,Vec(0.75,0.75,0.75)));
+	// triangles.push_back(Triangle(v011,v010,v111,Vec(0.75,0.75,0.75)));
+	// triangles.push_back(Triangle(v111,v010,v110,Vec(0.75,0.75,0.75)));
 
 	// front
-	triangles.push_back(Triangle(v001,v101,v000,Vec(0.25,0.25,0.25)));
-	triangles.push_back(Triangle(v101,v100,v000,Vec(0.25,0.25,0.25)));
+	// triangles.push_back(Triangle(v001,v101,v000,Vec(0.25,0.25,0.25)));
+	// triangles.push_back(Triangle(v101,v100,v000,Vec(0.25,0.25,0.25)));
 
 
 	t = new Node[triangles.size() * 4];

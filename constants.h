@@ -5,8 +5,8 @@ typedef double real;
 
 enum Material{DIFF, SPEC, REFR, CERA};
 
-const int HEIGHT = 256;
-const int WIDTH = 256;
-const real ALPHA = 0.7f;
+const int HEIGHT = 180;
+const int WIDTH = 320;
+const real ALPHA = 0.9f;
 
 #endif

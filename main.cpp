@@ -49,6 +49,7 @@ real sqr(real x) {
 // return -1 when no intersection
 // reture -2 when intersecting with model
 Texture texture("pictures/glass.png");
+Texture texture("pictures/river.jpg");
 int intersect(Ray ray, Vec& x, Vec& n, Vec& c, Material& m) {
 	real min_dist, temp_dist;
 	int nearest_sphere = -1;
@@ -73,8 +74,6 @@ int intersect(Ray ray, Vec& x, Vec& n, Vec& c, Material& m) {
 			n = model_n;
 			c = model_c;
 			m = model_m;
-			if (x.x>49.9 && 0<x.y && x.y<50 && -50<x.z && x.z<50)
-				c=texture.get_color(x.y/50,(x.z+50)/100);
 			return -2;
 		}
 	return nearest_sphere;
@@ -98,8 +97,8 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 			continue;
 
 		ray = rays[l];
-		if (eye_ray && depths[l]==0)
-			ray.pos = ray.pos + ray.dir * ((0-ray.pos.y)/ray.dir.y/2);
+		//if (eye_ray && depths[l]==0)
+		//	ray.pos = ray.pos + ray.dir * ((0-ray.pos.y)/ray.dir.y/2);
 
 		// information about the intersection
 		// without light
@@ -115,8 +114,12 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 		Vec nl = (n * ray.dir < 0) ? n : n * (-1);
 		real max_color = max(color.x,max(color.y,color.z));
 
+//		if (depths[l] == 0 && color.x<0.5 && color.y>0.5 && eye_ray)
+//			fprintf(stderr,"Distance = %.10f\n",(x-ray.pos).length());
+
+
 		// volumn light
-		
+		/*
 		real sigma = 0.033;
 		real dist = (x-ray.pos).length();
 		if (eye_ray) {
@@ -134,9 +137,6 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 			for (int i = 0; i < samples.size(); ++i) {
 				real stop_dist = samples[i].first;
 				real importance = samples[i].second * stop_probability / importance_sum;
-
-				//!!!!!!bugbugbugbug
-
 				points.push_back(HPoint(ray.pos+ray.dir*stop_dist, n, colors[l]*importance,pixel_h,pixel_w));
 				//points.push_back(HPoint(ray.pos+(x-ray.pos)*randf(), n, color.blend(colors[l])*stop_probability*(interval/dist),pixel_h,pixel_w));
 			}
@@ -169,6 +169,7 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 				continue;
 			}
 		}
+		*/
 		
 		
 		if (material == CERA && eye_ray) {
@@ -265,33 +266,33 @@ void generate_photon(Ray& photon, Vec& light) {
 	real p = randf() * 2.0 * M_PI;
 	real t = 2.0 * acos(sqrt(randf()));
 	real st = sin(t);
-//	photon = Ray(Vec(0, -25, 42.5), Vec(cos(p)*st, sin(p)*st, cos(t)));
 
-//	photon = Ray(Vec(49.0+randf(), 49.0+randf(), 50), Vec(0, sin(p)*st, cos(t)));
-//	photon = Ray(Vec(48.0+randf()*2, 48.0+randf()*2, 49.5), Vec(-3, -2, -4).normal());
-//	photon = Ray(Vec(49.5, 49.5, 49.5), Vec(-2+sin(p)*0.12*st, -1+cos(p)*0.12*st, -4).normal());
-
-	real a = randf()*M_PI/3.0;
-	real b = randf()*M_PI/3.0-M_PI/6.0;
-	real u = tan(b)*sqrt(3.0)/2.0+0.5;
-	real v = 1.0-tan(a)/sqrt(3.0);
+	//	photon = Ray(Vec(0, -25, 42.5), Vec(cos(p)*st, sin(p)*st, cos(t)));
+	//	photon = Ray(Vec(49.0+randf(), 49.0+randf(), 50), Vec(0, sin(p)*st, cos(t)));
+	//	photon = Ray(Vec(48.0+randf()*2, 48.0+randf()*2, 49.5), Vec(-3, -2, -4).normal());
+	//	photon = Ray(Vec(49.5, 49.5, 49.5), Vec(-2+sin(p)*0.12*st, -1+cos(p)*0.12*st, -4).normal());
 
 	// window
-	photon = Ray(Vec(49.99, u*50, v*100-50), Vec(-cos(a)+randf()*0.05-0.025,tan(b)*sqrt(3.0)*0.25+randf()*0.05-0.025,-sin(a)+randf()*0.05).normal());
-	light = texture.get_color(u,v) * 1000000 * M_PI * 4.0 * v * v;
+	// real a = randf()*M_PI/3.0;
+	// real b = randf()*M_PI/3.0-M_PI/6.0;
+	// real u = tan(b)*sqrt(3.0)/2.0+0.5;
+	// real v = 1.0-tan(a)/sqrt(3.0);
+	// photon = Ray(Vec(49.99, u*50, v*100-50), Vec(-cos(a)+randf()*0.05-0.025,tan(b)*sqrt(3.0)*0.25+randf()*0.05-0.025,-sin(a)+randf()*0.05).normal());
+	// light = texture.get_color(u,v) * 1000000 * M_PI * 4.0 * v * v;
 
-	// Rectangular lamp
-	// photon = Ray(Vec(randf()*20-10, randf()*10+15, 49.9), Vec(cos(p)*st, sin(p)*st, cos(t)));
-	// light = Vec(1.0,1.0,1.0) * 2500 * M_PI * 4.0;
+	photon = Ray(Vec(75, 0+randf()*20, 100+randf()*20), Vec(cos(p)*st, sin(p)*st, cos(t)));
+	light = Vec(1.0,1.0,1.0) * 25000 * M_PI * 4.0;
 }
 
 int main() {
 //	model.load_from_obj("models/bunny.fine.obj");
-	model.load_from_obj("models/angel.obj");
+//	model.load_from_obj("models/angel.obj");
+//	model.load_from_obj("models/fixed.perfect.dragon.100K.0.07.obj");
+	model.load_from_obj("models/simple.obj");
 
-	Ray camera = Ray(Vec(0, -100, 0), Vec(0, 1, 0));
+	Ray camera = Ray(Vec(0 + 10, 120 + 60, 72 + 30), Vec(-1, -6, -3).normal());
 
-	for (int epochs_number = 1; epochs_number <= 2; ++epochs_number) {
+	for (int epochs_number = 1; ; ++epochs_number) {
 		fprintf(stderr, "================== Epochs %d ==================\n", epochs_number);
 
 		points.clear();
@@ -302,17 +303,27 @@ int main() {
 			for (int w = 0; w < WIDTH; ++w) {
 				pixel_h = h;
 				pixel_w = w;
+				Vec up = Vec(0,0,1);
+				Vec u = (camera.dir % up).normal();
+				Vec v = (camera.dir % u).normal();
 				real x = (1.0 * w + randf() - 0.5 - WIDTH / 2) / WIDTH;
-				real z = (-1.0 * h + randf() - 0.5  + HEIGHT / 2) / WIDTH;
-				Ray ray = Ray(camera.pos, Vec(x ,1, z).normal());
+				real y = (-1.0 * h + randf() - 0.5 + HEIGHT / 2) / WIDTH;
+
+				Vec launch_point = camera.pos + camera.dir + u * x + v * y;
+				Vec focus_point = launch_point + (camera.pos + camera.dir * 2 - launch_point).normal() * 185;
+				real theta = randf() * 2 * M_PI;
+				real r = sqrt(randf()) * 10;
+				Vec rand_point = camera.pos + camera.dir * 2 + u * r * sin(theta) + v * r * cos(theta);
+
+				Ray ray = Ray(rand_point, (focus_point - rand_point).normal());
 				trace(ray, Vec(1.0, 1.0, 1.0), true);
 			}
 		}
 
 		grid.build(points, HEIGHT, WIDTH, epochs_number, global_r2);
 
-		int interval = 100000;
-		int total_photon_number = 1e6;
+		int interval = 10000;
+		int total_photon_number = 1e5;
 		time_t last_check_time=time(0);
 		for (int photon_number = 1; photon_number <= total_photon_number; ++photon_number) {
 			fprintf(stderr,"\rRecent photon number is %d",photon_number);
@@ -321,7 +332,7 @@ int main() {
 			generate_photon(ray, color);
 			trace(ray, color, false);
 			// output to screen
-			if (photon_number % 100000 == 0) {
+			if (photon_number % interval == 0) {
 				printf("\rPhoton number is %dw, the time cost is %lds\n", photon_number/10000, time(0)-last_check_time);
 				last_check_time = time(0);
 			}

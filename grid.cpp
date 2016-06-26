@@ -42,7 +42,7 @@ void Grid::build(vector<HPoint>& _points, int h, int w, int epochs_number, real&
 	low = low - Vec(1.0,1.0,1.0) * irad;
 	high = high + Vec(1.0,1.0,1.0) * irad;
 	if (epochs_number == 1) {
-		global_r2 = irad * irad;
+		global_r2 = irad * irad * 0.005;
 	} else {
 		global_r2 *= (1.0 * (epochs_number - 2.0) + ALPHA) / (1.0 * (epochs_number - 2.0) + 1.0);
 	}
