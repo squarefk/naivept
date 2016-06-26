@@ -291,7 +291,7 @@ int main() {
 
 	Ray camera = Ray(Vec(0, -100, 0), Vec(0, 1, 0));
 
-	for (int epochs_number = 1; epochs_number < 100; ++epochs_number) {
+	for (int epochs_number = 1; epochs_number <= 2; ++epochs_number) {
 		fprintf(stderr, "================== Epochs %d ==================\n", epochs_number);
 
 		points.clear();
@@ -312,7 +312,7 @@ int main() {
 		grid.build(points, HEIGHT, WIDTH, epochs_number, global_r2);
 
 		int interval = 100000;
-		int total_photon_number = 1e7;
+		int total_photon_number = 1e6;
 		time_t last_check_time=time(0);
 		for (int photon_number = 1; photon_number <= total_photon_number; ++photon_number) {
 			fprintf(stderr,"\rRecent photon number is %d",photon_number);
