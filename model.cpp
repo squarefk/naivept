@@ -98,22 +98,25 @@ void Model::load_from_obj(const char* file_name) {
 			y = -tz * 20 - 10;
 			z = ty * 20 - 10;
 			// water
-			x = tx * 100 - 50;
-			y = ty * 50;
-			z = tz * 2 - 15;
+			x = tx - 50;
+			y = ty;
+			z = tz - 15;
 			// angel
 			real theta=M_PI*3/4;
 			x = -(tx*sin(theta)+tz*cos(theta))*0.25;
 			y = (tx*cos(theta)-tz*sin(theta))*0.25+25;
 			z = ty*0.25-50;
+
 			// dragon
 			double scale = 30;
-			x = tx * scale - 10;
-			y = -tz * scale - 10;
+			x = tx * scale - 30;
+			y = -tz * scale - 30;
 			z = ty * scale + 21.14868;
+
 			xx = tx * scale + 10;
 			yy = -tz * scale + 10;
 			zz = ty * scale + 21.14868;
+
 			xxx = tx * scale + 30;
 			yyy = -tz * scale + 30;
 			zzz = ty * scale + 21.14868;
@@ -128,17 +131,17 @@ void Model::load_from_obj(const char* file_name) {
 			int x, y, z;
 			fscanf(fp, "%d %d %d", &x, &y, &z);
 
-			triangles.push_back(Triangle(v[x-1], v[y-1], v[z-1], Vec(0.9,0.1,0.1), CERA));
+			triangles.push_back(Triangle(v[x-1], v[y-1], v[z-1], Vec(0.94,0.94,0.96), METAL));
 			idx.push_back(x);
 			idy.push_back(y);
 			idz.push_back(z);
 
-			triangles.push_back(Triangle(vv[x-1], vv[y-1], vv[z-1], Vec(0.1,0.9,0.1), CERA));
+			triangles.push_back(Triangle(vv[x-1], vv[y-1], vv[z-1], Vec(0.98,0.96,0.73), METAL));
 			idx.push_back(x);
 			idy.push_back(y);
 			idz.push_back(z);
 
-			triangles.push_back(Triangle(vvv[x-1], vvv[y-1], vvv[z-1], Vec(0.1,0.1,0.9), CERA));
+			triangles.push_back(Triangle(vvv[x-1], vvv[y-1], vvv[z-1], Vec(0.78,0.58,0.37), METAL));
 			idx.push_back(x);
 			idy.push_back(y);
 			idz.push_back(z);
@@ -181,8 +184,8 @@ void Model::load_from_obj(const char* file_name) {
 	Vec v111(x_wall_max,y_wall_max,z_wall_max);
 
 	// down
-	triangles.push_back(Triangle(v010,v000,v110,Vec(0.75,0.75,0.75)));
-	triangles.push_back(Triangle(v110,v000,v100,Vec(0.75,0.75,0.75)));
+	triangles.push_back(Triangle(v010,v000,v110,Vec(0.75,0.75,0.75),MARBLE));
+	triangles.push_back(Triangle(v110,v000,v100,Vec(0.75,0.75,0.75),MARBLE));
 
 	// left
 	// triangles.push_back(Triangle(v001,v000,v011,Vec(0.50,0.25,0.15)));

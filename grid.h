@@ -22,7 +22,9 @@ public:
 	Grid();
 	void build(std::vector<HPoint>& _points, int h, int w, int epochs_number, real& global_r2);
 	std::vector<HPoint*>& find_possible_near_points(Vec x);
-	unsigned char to_unsigned_char(real x);
+	real calc_prop(int epochs_number);
+	real each_lum(real r, real g, real b, real prop);
+	unsigned char to_unsigned_char(real x, real prop);
 	void output_picture(int photon_number, int epochs_number, real global_r2);
 	void save_picture(int photon_number, real global_r2);
 };

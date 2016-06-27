@@ -19,9 +19,7 @@ using namespace std;
 // color of light source must be Vec()
 int sphere_total = 0;
 Sphere spheres[] = {//Scene: radius, position, emission, color, material 
-	Sphere(12,  Vec(-33, 23 ,-38),      Vec(),Vec(1,1,1)*.99, SPEC),//Mirr 
-	Sphere(5,   Vec(0, 25, 42.5),      Vec(1,1,1)*50, Vec(), DIFF),//light 
-
+	Sphere(20,  Vec(30, 0 ,20),         Vec(),Vec(0.25,0.75,0.75)*.999, SPEC),//Mirr 
 	Sphere(1e5, Vec( 1e5+1,40.8,81.6), Vec(),Vec(.75,.25,.25),DIFF),//Left 
 	Sphere(1e5, Vec(-1e5+99,40.8,81.6),Vec(),Vec(.25,.25,.75),DIFF),//Rght 
 	Sphere(1e5, Vec(50,40.8, 1e5),     Vec(),Vec(.75,.75,.75),DIFF),//Back 
@@ -48,8 +46,8 @@ real sqr(real x) {
 
 // return -1 when no intersection
 // reture -2 when intersecting with model
-Texture texture("pictures/glass.png");
-Texture texture("pictures/river.jpg");
+Texture floor_texture("pictures/floor.jpg");
+Texture palace_texture("pictures/home.jpg");
 int intersect(Ray ray, Vec& x, Vec& n, Vec& c, Material& m) {
 	real min_dist, temp_dist;
 	int nearest_sphere = -1;
@@ -74,6 +72,9 @@ int intersect(Ray ray, Vec& x, Vec& n, Vec& c, Material& m) {
 			n = model_n;
 			c = model_c;
 			m = model_m;
+			if (m == MARBLE) {
+				c=floor_texture.get_color((x.x+1000)/400,(x.y+1000)/400);
+			}
 			return -2;
 		}
 	return nearest_sphere;
@@ -108,6 +109,9 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 		int nearest_sphere = intersect(ray, x, n, color, material);
 
 		if (nearest_sphere == -1) {
+			if (eye_ray)
+				points.push_back(HPoint(Vec(), Vec(), Vec(), pixel_h, pixel_w, palace_texture.get_color(ray.dir).blend(colors[l])*TOTAL_PHOTON_NUMBER*0.55, false));
+//			fprintf(stderr, "%.4f %.4f %.4f\n",palace_texture.get_color(ray.dir).x,palace_texture.get_color(ray.dir).y,palace_texture.get_color(ray.dir).z);
 			continue;
 		}
 
@@ -118,9 +122,9 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 //			fprintf(stderr,"Distance = %.10f\n",(x-ray.pos).length());
 
 
-		// volumn light
+		// volume light
 		/*
-		real sigma = 0.033;
+		real sigma = 0.03;
 		real dist = (x-ray.pos).length();
 		if (eye_ray) {
 			real stop_probability = 1.0 - exp(-dist*sigma);
@@ -137,7 +141,8 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 			for (int i = 0; i < samples.size(); ++i) {
 				real stop_dist = samples[i].first;
 				real importance = samples[i].second * stop_probability / importance_sum;
-				points.push_back(HPoint(ray.pos+ray.dir*stop_dist, n, colors[l]*importance,pixel_h,pixel_w));
+				//!!!!!!bugbugbugbug
+				points.push_back(HPoint(ray.pos+ray.dir*stop_dist, n, colors[l]*importance*6.4,pixel_h,pixel_w));
 				//points.push_back(HPoint(ray.pos+(x-ray.pos)*randf(), n, color.blend(colors[l])*stop_probability*(interval/dist),pixel_h,pixel_w));
 			}
 			colors[l] = colors[l] * (1.0 - stop_probability);
@@ -171,20 +176,34 @@ void trace(Ray ray, Vec v, bool eye_ray) {
 		}
 		*/
 		
-		
 		if (material == CERA && eye_ray) {
 			real prop = 0.5;
 			points.push_back(HPoint(x, n, color.blend(colors[l]) * prop, pixel_h, pixel_w));
-
 			Vec d = (n * (-ray.dir * n) * 2 + ray.dir).normal();
-//			return light + color.blend(tracing(Ray(x, d), depth + 1));
 			colors.push_back(color.blend(colors[l]) * (1 - prop));
 			rays.push_back(Ray(x + nl * offset_eps, d));
 			depths.push_back(depths[l]+1);
 		} else
-		if (material == DIFF || material == CERA) {
+		if (material == MARBLE && eye_ray) {
+			real prop = 0.9;
+			points.push_back(HPoint(x, n, color.blend(colors[l]) * prop, pixel_h, pixel_w));
+			Vec d = (n * (-ray.dir * n) * 2 + ray.dir).normal();
+			colors.push_back(colors[l] * (1 - prop));
+			rays.push_back(Ray(x + nl * offset_eps, d));
+			depths.push_back(depths[l]+1);
+		} else
+		if (material == METAL && eye_ray) {
+			real prop = 0.2;
+			points.push_back(HPoint(x, n, color.blend(colors[l]) * prop, pixel_h, pixel_w));
+			Vec d = (n * (-ray.dir * n) * 2 + ray.dir).normal();
+			colors.push_back(color.blend(colors[l]) * (1 - prop));
+			rays.push_back(Ray(x + nl * offset_eps, d));
+			depths.push_back(depths[l]+1);
+		} else
+		if (material == DIFF || material == CERA || material == MARBLE || material == METAL) {
 			if (eye_ray) {
 				points.push_back(HPoint(x, n, color.blend(colors[l]), pixel_h, pixel_w));
+//				fprintf(stderr, "%.2f %.2f %.2f\n",x.x,x.y,x.z);
 			} else {
 				vector<HPoint*>& points = grid.find_possible_near_points(x);
 				for (int i = 0; i < (points).size(); ++i) {
@@ -280,16 +299,28 @@ void generate_photon(Ray& photon, Vec& light) {
 	// photon = Ray(Vec(49.99, u*50, v*100-50), Vec(-cos(a)+randf()*0.05-0.025,tan(b)*sqrt(3.0)*0.25+randf()*0.05-0.025,-sin(a)+randf()*0.05).normal());
 	// light = texture.get_color(u,v) * 1000000 * M_PI * 4.0 * v * v;
 
-	photon = Ray(Vec(75, 0+randf()*20, 100+randf()*20), Vec(cos(p)*st, sin(p)*st, cos(t)));
-	light = Vec(1.0,1.0,1.0) * 25000 * M_PI * 4.0;
+	if (randf()<0.9) {
+		photon = Ray(Vec(75, 0+randf()*20, 100+randf()*20), Vec(cos(p)*st, sin(p)*st, cos(t)));
+		light = Vec(1,1,1) * 25000 * M_PI * 4.0;
+	} else {
+		photon = Ray(Vec(-75, 0+randf()*20, 100+randf()*20), Vec(cos(p)*st, sin(p)*st, cos(t)));
+		light = Vec(1,1,1) * 25000 * M_PI * 4.0;
+	}
+
+	// ibl lighting
+	// Vec photon_pos, photon_dir, color;
+	// river_texture.generate_photon(photon, color, randf());
+	// photon.pos = photon.pos + Vec(randf(),randf(),randf())*100;
+	// light = color * 2500 * M_PI * 4.0;
 }
 
 int main() {
 //	model.load_from_obj("models/bunny.fine.obj");
 //	model.load_from_obj("models/angel.obj");
-//	model.load_from_obj("models/fixed.perfect.dragon.100K.0.07.obj");
-	model.load_from_obj("models/simple.obj");
+	model.load_from_obj("models/fixed.perfect.dragon.100K.0.07.obj");
+//	model.load_from_obj("models/simple.obj");
 
+//	Ray camera = Ray(Vec(0 + 10, 120 + 60, 72 + 30), Vec(-1, -6, -3).normal());
 	Ray camera = Ray(Vec(0 + 10, 120 + 60, 72 + 30), Vec(-1, -6, -3).normal());
 
 	for (int epochs_number = 1; ; ++epochs_number) {
@@ -310,9 +341,9 @@ int main() {
 				real y = (-1.0 * h + randf() - 0.5 + HEIGHT / 2) / WIDTH;
 
 				Vec launch_point = camera.pos + camera.dir + u * x + v * y;
-				Vec focus_point = launch_point + (camera.pos + camera.dir * 2 - launch_point).normal() * 185;
+				Vec focus_point = launch_point + (camera.pos + camera.dir * 2 - launch_point) * 188;
 				real theta = randf() * 2 * M_PI;
-				real r = sqrt(randf()) * 10;
+				real r = sqrt(randf()) * APERTURE;
 				Vec rand_point = camera.pos + camera.dir * 2 + u * r * sin(theta) + v * r * cos(theta);
 
 				Ray ray = Ray(rand_point, (focus_point - rand_point).normal());
@@ -322,11 +353,11 @@ int main() {
 
 		grid.build(points, HEIGHT, WIDTH, epochs_number, global_r2);
 
-		int interval = 10000;
-		int total_photon_number = 1e5;
+		int interval = 100000;
 		time_t last_check_time=time(0);
-		for (int photon_number = 1; photon_number <= total_photon_number; ++photon_number) {
-			fprintf(stderr,"\rRecent photon number is %d",photon_number);
+		for (int photon_number = 1; photon_number <= TOTAL_PHOTON_NUMBER; ++photon_number) {
+			if (photon_number % 1000 == 0)
+				fprintf(stderr,"\rRecent photon number is %d",photon_number);
 			Ray ray;
 			Vec color;
 			generate_photon(ray, color);
@@ -344,7 +375,7 @@ int main() {
 			}
 		}
 
-		grid.save_picture(total_photon_number, global_r2);
+		grid.save_picture(TOTAL_PHOTON_NUMBER, global_r2);
 	}
 
 	return 0;
